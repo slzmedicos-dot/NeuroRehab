@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NeuroRehab Manager (v.New)</title>
+    <title>NeuroRehab Manager 5.3 (Receitas)</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -116,6 +116,7 @@
                                 <strong>{{ p.name }}</strong> <span style="font-size: 0.9em;">({{ p.age }} anos)</span>
                             </div>
                             <div v-if="p.profession" style="font-size: 0.85em; margin-top: 2px; color: #333;">{{ p.profession }}</div>
+                            <div v-if="p.prescriptionDone" style="font-size: 0.8em; margin-top: 2px; font-weight: bold;">[Receita OK]</div>
                         </td>
                         <td style="text-align: justify; line-height: 1.1;">
                             {{ p.admissionNote || '-' }}
@@ -147,7 +148,8 @@
                 <div class="text-center mb-8">
                     <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-medical-100 mb-4 text-medical-600"><i class="fas fa-brain text-4xl"></i></div>
                     <h1 class="text-2xl font-bold text-gray-800">NeuroRehab Manager</h1>
-                    <p class="text-gray-500 text-sm mt-1">Acesso Restrito à Equipe Clínica</p>
+                    <p class="text-gray-400 text-xs mt-1 font-mono">v5.3</p> <!-- Versão -->
+                    <p class="text-gray-500 text-sm mt-2">Acesso Restrito à Equipe Clínica</p>
                 </div>
                 <form @submit.prevent="handleLogin" class="space-y-6">
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">E-mail</label><input v-model="loginForm.email" type="email" required class="block w-full rounded-md border-gray-300 p-2.5 border focus:ring-2 focus:ring-medical-500 outline-none shadow-sm"></div>
@@ -166,7 +168,11 @@
             <!-- Sidebar -->
             <aside class="w-64 bg-white shadow-md flex-col hidden md:flex z-10">
                 <div class="p-6 border-b border-gray-200 flex items-center gap-3">
-                    <i class="fas fa-brain text-medical-600 text-2xl"></i><span class="font-bold text-gray-800">NeuroRehab</span>
+                    <i class="fas fa-brain text-medical-600 text-2xl"></i>
+                    <div>
+                        <span class="font-bold text-gray-800 block leading-none">NeuroRehab</span>
+                        <span class="text-[10px] text-gray-400 font-mono">v5.3</span> <!-- Versão -->
+                    </div>
                 </div>
                 <nav class="flex-grow p-4 space-y-2">
                     <a href="#" class="flex items-center px-4 py-3 bg-medical-50 text-medical-700 rounded-lg font-medium"><i class="fas fa-user-injured w-6"></i> Pacientes</a>
@@ -181,7 +187,10 @@
             <!-- Main Content -->
             <main class="flex-1 overflow-hidden flex flex-col">
                 <header class="bg-white shadow-sm p-4 flex justify-between items-center md:hidden">
-                    <span class="font-bold text-gray-800 flex items-center"><i class="fas fa-brain text-medical-600 mr-2"></i> NeuroRehab</span>
+                    <span class="font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-brain text-medical-600 mr-2"></i> 
+                        NeuroRehab <span class="text-[10px] text-gray-400 ml-1 mt-1">v5.3</span>
+                    </span>
                     <button @click="logout" class="text-gray-500"><i class="fas fa-sign-out-alt"></i></button>
                 </header>
 
@@ -203,9 +212,16 @@
                         </div>
 
                         <div class="flex flex-wrap gap-3 items-center w-full md:w-auto justify-end">
+                            <!-- Filtro Intercorrência -->
                             <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer bg-gray-50 px-3 py-2 rounded border border-gray-200 hover:bg-gray-100 select-none">
                                 <input type="checkbox" v-model="filterIntercurrence" class="rounded text-medical-600">
                                 <span class="text-xs font-bold text-red-600"><i class="fas fa-exclamation-triangle mr-1"></i> Intercorrências</span>
+                            </label>
+
+                            <!-- Filtro Sem Receita (NOVO) -->
+                            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer bg-gray-50 px-3 py-2 rounded border border-gray-200 hover:bg-gray-100 select-none">
+                                <input type="checkbox" v-model="filterNoPrescription" class="rounded text-purple-600">
+                                <span class="text-xs font-bold text-purple-600"><i class="fas fa-file-prescription mr-1"></i> Sem Receita</span>
                             </label>
 
                             <select v-model="sortBy" class="text-sm border-gray-300 border rounded-md p-2 bg-gray-50 outline-none">
@@ -219,8 +235,8 @@
                                 <button @click="viewMode = 'list'" :class="['px-3 py-2 text-sm', viewMode === 'list' ? 'bg-medical-100 text-medical-700' : 'bg-white text-gray-500']"><i class="fas fa-list"></i></button>
                             </div>
 
-                            <button @click="printList" class="text-gray-600 hover:text-medical-700 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm flex items-center" title="Exportar PDF">
-                                <i class="fas fa-print mr-2"></i> Imprimir
+                            <button @click="printList" class="text-gray-600 hover:text-medical-700 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm flex items-center gap-2" title="Exportar PDF">
+                                <i class="fas fa-print"></i> Imprimir
                             </button>
                         </div>
                     </div>
@@ -250,6 +266,14 @@
                             <div class="p-5 flex-grow space-y-3">
                                 <div class="text-sm"><span class="text-gray-400 block text-xs uppercase tracking-wider">Diagnóstico</span><span class="font-medium text-gray-700">{{ patient.diagnosis }}</span></div>
                                 <div class="text-sm"><span class="text-gray-400 block text-xs uppercase tracking-wider">Leito</span><span class="text-gray-600">{{ patient.bed }}</span></div>
+                                
+                                <!-- Indicador de Receita (NOVO) -->
+                                <div class="text-sm flex items-center gap-2">
+                                    <span class="text-gray-400 block text-xs uppercase tracking-wider">Receita</span>
+                                    <span v-if="patient.prescriptionDone" class="text-purple-600 font-bold text-xs bg-purple-50 px-2 py-0.5 rounded border border-purple-100"><i class="fas fa-check mr-1"></i> Receita OK</span>
+                                    <span v-else class="text-gray-400 text-xs"><i class="fas fa-times mr-1"></i> S/ Receita</span>
+                                </div>
+
                                 <div v-if="patient.pendingCount > 0" class="mt-2 bg-yellow-50 rounded-md border border-yellow-100 p-2.5">
                                     <div class="flex justify-between items-center mb-1"><span class="text-xs font-bold text-yellow-800 flex items-center"><i class="fas fa-tasks mr-1"></i> Pendências</span><span class="bg-yellow-200 text-yellow-800 text-[10px] px-1.5 rounded-full font-bold">{{ patient.pendingCount }}</span></div>
                                     <ul class="space-y-1"><li v-for="task in patient.pendingPreview" :key="task.description" class="text-xs text-gray-600 flex items-start gap-1.5 truncate"><i class="fas fa-circle text-[6px] text-yellow-500 mt-1.5 flex-shrink-0"></i><span class="truncate">{{ task.description }}</span></li></ul>
@@ -276,7 +300,7 @@
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leito</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receita</th> <!-- Coluna Nova -->
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Diagnóstico</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prev. Alta</th>
                                 </tr>
@@ -294,7 +318,10 @@
                                         <span v-else-if="isVisitOverdue(patient.lastVisit)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">Visita Atrasada</span>
                                         <span v-else class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Estável</span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ patient.bed }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span v-if="patient.prescriptionDone" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">OK</span>
+                                        <span v-else class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-500">Pendente</span>
+                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">{{ patient.diagnosis }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">{{ formatDate(patient.carePlan?.estimatedDate) || '-' }}</td>
                                 </tr>
@@ -494,6 +521,7 @@
                 const viewMode = ref('grid'); 
                 const sortBy = ref('name'); 
                 const filterIntercurrence = ref(false);
+                const filterNoPrescription = ref(false); // Novo filtro
                 const windowWidth = ref(window.innerWidth);
                 const isNotePanelOpen = ref(true); 
                 
@@ -622,6 +650,7 @@
                 const togglePrescription = async (e) => {
                     const isChecked = e.target.checked;
                     const now = isChecked ? new Date().toISOString() : null;
+                    // Atualiza localmente para feedback instantâneo e no banco
                     selectedPatient.value.prescriptionDone = isChecked;
                     selectedPatient.value.prescriptionDate = now;
                     await updatePatientDoc({ id: selectedPatient.value.id, prescriptionDone: isChecked, prescriptionDate: now });
@@ -697,7 +726,7 @@
                     const newCount = Math.max(0, (selectedPatient.value.pendingCount || 1) - 1);
                     const newPreview = selectedPatient.value.pendingPreview.filter(p => p.description !== currentPendencies.value.find(c => c.id === taskId)?.description);
                     batch.update(doc(db, 'patients', pid), { pendingCount: newCount, pendingPreview: newPreview });
-                    try { await batch.commit(); } catch(e) { showNotification('Erro.', 'error'); }
+                    try { await batch.commit(); } catch(e) { showNotification('Erro ao deletar.', 'error'); }
                 };
 
                 const dischargePatient = async (p) => { await updatePatientDoc({ id: p.id, status: 'discharged', dischargeDate: new Date().toISOString() }); showNotification("Alta registrada.", "success"); };
@@ -717,6 +746,10 @@
                         list = list.filter(p => p.name.toLowerCase().includes(q) || (p.recordNumber && p.recordNumber.toLowerCase().includes(q)));
                     }
                     if (filterIntercurrence.value) { list = list.filter(p => p.hasActiveIntercurrence); }
+                    
+                    // NOVO FILTRO: SEM RECEITA
+                    if (filterNoPrescription.value) { list = list.filter(p => !p.prescriptionDone); }
+
                     return list.sort((a, b) => {
                         if (sortBy.value === 'name') return a.name.localeCompare(b.name);
                         const dateA = new Date(showHistory.value ? (a.dischargeDate || 0) : (a.admissionDate || 0));
@@ -737,7 +770,8 @@
                     newPendency, addPendency, deletePendency, copySummary, getCategoryColor, getInitials, formatDate,
                     savePatients: updatePatientDoc, notifications, currentEvolutions, currentPendencies, searchQuery, openPatientDetails, closePatientDetails,
                     resolveIntercurrence, registerVisit, isVisitOverdue, windowWidth, isNotePanelOpen,
-                    viewMode, sortBy, filterIntercurrence, printList, togglePrescription, saveCarePlan
+                    viewMode, sortBy, filterIntercurrence, printList, togglePrescription, saveCarePlan,
+                    filterNoPrescription // Novo
                 };
             }
         }).mount('#app');
