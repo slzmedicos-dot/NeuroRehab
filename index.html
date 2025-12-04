@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NeuroRehab Manager 5.3 (PIN Fixed)</title>
+    <title>NeuroRehab Manager 5.4 (Confirm & Undo)</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -50,7 +50,6 @@
         @media print {
             body * { visibility: hidden; }
             #app > :not(#print-section) { display: none !important; }
-            
             #print-section, #print-section * { visibility: visible; }
             #print-section {
                 display: block !important;
@@ -61,19 +60,11 @@
                 background: white;
                 font-family: Arial, sans-serif !important;
             }
-
-            .print-header {
-                text-align: center;
-                margin-bottom: 5px;
-                border-bottom: 1px solid #000;
-                padding-bottom: 2px;
-            }
-
+            .print-header { text-align: center; margin-bottom: 5px; border-bottom: 1px solid #000; padding-bottom: 2px; }
             table { width: 100%; border-collapse: collapse; font-size: 8pt; }
             th, td { border: 1px solid #000; padding: 3px 5px; text-align: left; vertical-align: top; }
             th { background-color: #eee !important; font-weight: bold; -webkit-print-color-adjust: exact; }
             tr { page-break-inside: avoid; }
-            
             .no-print, .fixed, .absolute { display: none !important; }
         }
     </style>
@@ -83,7 +74,7 @@
     <div id="app" class="h-full flex flex-col" v-cloak>
 
         <!-- Notificações -->
-        <div class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none no-print">
+        <div class="fixed top-4 right-4 z-[60] flex flex-col gap-2 pointer-events-none no-print">
             <transition-group name="fade">
                 <div v-for="notif in notifications" :key="notif.id" 
                      :class="['px-4 py-3 rounded shadow-lg text-white flex items-center min-w-[250px] pointer-events-auto', notif.type === 'error' ? 'bg-red-500' : 'bg-green-600']">
@@ -91,6 +82,19 @@
                     {{ notif.message }}
                 </div>
             </transition-group>
+        </div>
+
+        <!-- MODAL DE CONFIRMAÇÃO GENÉRICO -->
+        <div v-if="showConfirmDialog" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-gray-900 bg-opacity-50 no-print">
+            <div class="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 text-center">
+                <div class="mb-4 text-amber-500 text-4xl"><i class="fas fa-question-circle"></i></div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Confirmação</h3>
+                <p class="text-gray-600 mb-6 text-sm">{{ confirmMessage }}</p>
+                <div class="flex gap-3 justify-center">
+                    <button @click="cancelConfirm" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm font-medium">Cancelar</button>
+                    <button @click="executeConfirm" class="px-4 py-2 bg-medical-600 text-white rounded-md hover:bg-medical-700 text-sm font-medium">Confirmar</button>
+                </div>
+            </div>
         </div>
 
         <!-- ÁREA DE IMPRESSÃO (PDF OTIMIZADO) -->
@@ -168,7 +172,6 @@
                 <p class="text-sm text-gray-500 mb-6">Digite o PIN da equipe para liberar o acesso.</p>
                 
                 <div class="space-y-4">
-                    <!-- Adicionado autocomplete="off" para não salvar o PIN -->
                     <input v-model="pinInput" type="tel" maxlength="6" autocomplete="off" class="block w-full text-center text-2xl tracking-[0.5em] font-bold rounded-md border-gray-300 border-2 p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="••••">
                     <button @click="verifyPin" :disabled="!pinInput" class="w-full bg-blue-600 text-white py-2 rounded-md font-medium hover:bg-blue-700 transition-colors">Liberar Acesso</button>
                     <button @click="logout" class="text-xs text-gray-400 hover:text-gray-600 mt-4 underline">Não sou {{ currentUser.email }} (Sair)</button>
@@ -275,12 +278,16 @@
                                     <div class="text-right text-xs"><span class="text-gray-400 block uppercase tracking-wider text-[10px]">Última Visita</span><span :class="['font-medium', isVisitOverdue(patient.lastVisit) ? 'text-orange-600 font-bold' : 'text-gray-600']">{{ formatDate(patient.lastVisit) || 'Nunca' }}</span></div>
                                 </div>
                             </div>
+                            <!-- AÇÕES COM CONFIRMAÇÃO -->
                             <div class="p-4 bg-gray-50 rounded-b-xl border-t border-gray-100 flex justify-end gap-2" v-if="patient.status === 'active'">
-                                <button @click.stop="dischargePatient(patient)" class="text-sm text-medical-600 hover:text-medical-800 font-medium px-3 py-1.5 rounded hover:bg-medical-50 z-10"><i class="fas fa-check-circle mr-1"></i> Dar Alta</button>
+                                <button @click.stop="confirmAction('discharge', patient)" class="text-sm text-medical-600 hover:text-medical-800 font-medium px-3 py-1.5 rounded hover:bg-medical-50 z-10"><i class="fas fa-check-circle mr-1"></i> Dar Alta</button>
                             </div>
                             <div class="p-4 bg-gray-50 rounded-b-xl border-t border-gray-100 flex justify-between items-center text-xs text-gray-500" v-else>
                                 <span>Alta: {{ formatDate(patient.dischargeDate) }}</span>
-                                <button @click.stop="startNewAdmission(patient)" class="text-blue-600 hover:underline z-10 font-bold"><i class="fas fa-file-medical mr-1"></i> Nova Internação</button>
+                                <div class="flex gap-2 z-10">
+                                    <button @click.stop="confirmAction('undoDischarge', patient)" class="text-red-500 hover:underline">Desfazer Alta</button>
+                                    <button @click.stop="startNewAdmission(patient)" class="text-blue-600 hover:underline font-bold"><i class="fas fa-file-medical mr-1"></i> Nova Int.</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -322,7 +329,7 @@
             </main>
         </div>
 
-        <!-- MODAL NOVO PACIENTE -->
+        <!-- MODAL NOVO PACIENTE (COM DETECÇÃO DE DUPLICIDADE) -->
         <div v-if="showModal" class="fixed inset-0 z-40 overflow-y-auto no-print">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="closeModal"></div>
@@ -331,7 +338,11 @@
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Adicionar Paciente / Nova Internação</h3>
                         <div class="space-y-4">
                             <div class="bg-blue-50 p-3 rounded-md border border-blue-100 mb-4"><label class="block text-sm font-bold text-blue-800 mb-1">Data da Internação</label><input type="date" v-model="newPatient.admissionDate" class="block w-full rounded-md border-blue-200 py-1.5 px-3 sm:text-sm"></div>
-                            <div class="grid grid-cols-3 gap-4"><div class="col-span-1"><label class="block text-sm font-medium text-gray-700">Prontuário</label><input type="text" v-model="newPatient.recordNumber" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 sm:text-sm"></div><div class="col-span-2"><label class="block text-sm font-medium text-gray-700">Nome Completo</label><input type="text" v-model="newPatient.name" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 sm:text-sm"></div></div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <!-- EVENTO BLUR PARA CHECAR EXISTÊNCIA -->
+                                <div class="col-span-1"><label class="block text-sm font-medium text-gray-700">Prontuário</label><input type="text" v-model="newPatient.recordNumber" @blur="checkRecordNumber" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 sm:text-sm" placeholder="Digite para buscar..."></div>
+                                <div class="col-span-2"><label class="block text-sm font-medium text-gray-700">Nome Completo</label><input type="text" v-model="newPatient.name" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 sm:text-sm"></div>
+                            </div>
                             <div class="grid grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-gray-700">Idade</label><input type="number" v-model="newPatient.age" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 sm:text-sm"></div><div><label class="block text-sm font-medium text-gray-700">Leito</label><input type="text" v-model="newPatient.bed" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 sm:text-sm"></div></div>
                             <div><label class="block text-sm font-medium text-gray-700">Profissão / Escolaridade</label><input type="text" v-model="newPatient.profession" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 sm:text-sm" placeholder="Ex: Professor / Superior Completo"></div>
                             <div><label class="block text-sm font-medium text-gray-700">Diagnóstico</label><select v-model="newPatient.diagnosis" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 sm:text-sm"><option value="" disabled>Selecione...</option><option>AVE (Acidente Vascular Encefálico)</option><option>TCE (Traumatismo Cranioencefálico)</option><option>Lesão Medular</option><option>Doença de Parkinson</option><option>Outro</option></select></div>
@@ -359,12 +370,13 @@
                         <button @click="activeTab = 'summary'" :class="['pb-3 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap', activeTab === 'summary' ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700']"><i class="fas fa-file-medical-alt mr-2"></i> Resumo Alta</button>
                     </div>
                     <div class="flex-grow overflow-hidden bg-gray-50 relative">
-                        <!-- TIMELINE -->
+                        <!-- TIMELINE (COM CONFIRMAÇÃO DE VISITA) -->
                         <div v-if="activeTab === 'timeline'" class="absolute inset-0 flex flex-col md:flex-row overflow-hidden">
                             <div class="flex-grow p-6 overflow-y-auto custom-scrollbar bg-gray-50 transition-all" :class="{'md:w-full': !isNotePanelOpen, 'md:w-2/3': isNotePanelOpen}">
                                 <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-6 flex justify-between items-center shadow-sm">
                                     <div><p class="text-sm font-bold text-blue-900">Registro Diário</p><p class="text-xs text-blue-600">Última: {{ formatDate(selectedPatient.lastVisit) || '-' }}</p></div>
-                                    <button @click="registerVisit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow transition-colors flex items-center"><i class="fas fa-check-circle mr-2"></i> Visita Hoje</button>
+                                    <!-- Ação com confirmação -->
+                                    <button @click="confirmAction('visit', null)" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow transition-colors flex items-center"><i class="fas fa-check-circle mr-2"></i> Visita Hoje</button>
                                 </div>
                                 <div v-if="currentEvolutions.length > 0" class="space-y-6 pb-20 md:pb-0">
                                     <div v-for="evo in currentEvolutions" :key="evo.id" class="relative pl-6 border-l-2 ml-2" :class="evo.type === 'intercurrence' ? 'border-medical-alert-500' : 'border-gray-300'">
@@ -507,6 +519,12 @@
                 const isIntercurrence = ref(false);
                 const searchQuery = ref('');
                 
+                // Confirm Modal State
+                const showConfirmDialog = ref(false);
+                const confirmMessage = ref('');
+                const pendingAction = ref(null);
+                const pendingPayload = ref(null);
+
                 const viewMode = ref('grid'); 
                 const sortBy = ref('name'); 
                 const filterIntercurrence = ref(false);
@@ -520,6 +538,7 @@
                 
                 window.addEventListener('resize', () => {
                     windowWidth.value = window.innerWidth;
+                    if(windowWidth.value < 768) isNotePanelOpen.value = false;
                 });
 
                 const currentEvolutions = ref([]);
@@ -640,6 +659,7 @@
                     const pid = selectedPatientId.value;
                     const p = selectedPatient.value;
 
+                    // Salva dados editáveis também (Age, Profession)
                     batch.update(doc(db, 'patients', pid), { 
                         carePlan: p.carePlan,
                         admissionNote: p.admissionNote,
@@ -663,6 +683,45 @@
                     } catch (e) {
                         showNotification('Erro ao salvar.', 'error');
                     }
+                };
+                
+                // Confirm Modal Logic
+                const confirmAction = (action, payload) => {
+                    pendingAction.value = action;
+                    pendingPayload.value = payload;
+                    
+                    if (action === 'discharge') {
+                        confirmMessage.value = `Deseja realmente dar alta para ${payload.name}?`;
+                    } else if (action === 'visit') {
+                        confirmMessage.value = 'Confirmar que a visita foi realizada hoje?';
+                    } else if (action === 'undoDischarge') {
+                        confirmMessage.value = `Deseja reativar a internação de ${payload.name}?`;
+                        // Safety check
+                        const activeRecord = patients.value.find(p => p.status === 'active' && p.recordNumber === payload.recordNumber);
+                        if (activeRecord) {
+                           showNotification('Paciente já possui uma internação ativa.', 'error');
+                           return;
+                        }
+                    }
+                    
+                    showConfirmDialog.value = true;
+                };
+
+                const cancelConfirm = () => {
+                    showConfirmDialog.value = false;
+                    pendingAction.value = null;
+                    pendingPayload.value = null;
+                };
+
+                const executeConfirm = () => {
+                    if (pendingAction.value === 'discharge') {
+                        dischargePatient(pendingPayload.value);
+                    } else if (pendingAction.value === 'visit') {
+                        registerVisit();
+                    } else if (pendingAction.value === 'undoDischarge') {
+                        undoDischarge(pendingPayload.value);
+                    }
+                    cancelConfirm();
                 };
 
                 const registerVisit = async () => {
@@ -697,6 +756,19 @@
                     batch.update(doc(db, 'patients', pid), { hasActiveIntercurrence: false });
                     batch.update(doc(db, 'patients', pid, 'evolutions', evo.id), { resolved: true });
                     try { await batch.commit(); showNotification('Resolvido!', 'success'); } catch (e) { showNotification('Erro.', 'error'); }
+                };
+                
+                // Watcher for Record Number to auto-fill
+                const checkRecordNumber = () => {
+                    if (!newPatient.value.recordNumber) return;
+                    // Find any patient with this record number (active or discharged)
+                    const existing = patients.value.find(p => p.recordNumber === newPatient.value.recordNumber);
+                    if (existing) {
+                        newPatient.value.name = existing.name;
+                        newPatient.value.age = existing.age;
+                        newPatient.value.profession = existing.profession || '';
+                        showNotification('Paciente encontrado no histórico.', 'success');
+                    }
                 };
 
                 const addPatient = async () => {
@@ -757,6 +829,13 @@
                 };
 
                 const dischargePatient = async (p) => { await updatePatientDoc({ id: p.id, status: 'discharged', dischargeDate: new Date().toISOString() }); showNotification("Alta registrada.", "success"); };
+                
+                const undoDischarge = async (p) => { 
+                    await updatePatientDoc({ id: p.id, status: 'active', dischargeDate: null }); 
+                    showNotification("Alta desfeita. Paciente reativo.", "success"); 
+                };
+                
+                const reactivatePatient = async (p) => { await updatePatientDoc({ id: p.id, status: 'active', dischargeDate: null }); showNotification("Readmitido.", "success"); };
                 const copySummary = async () => { try { await navigator.clipboard.writeText(selectedPatient.value.dischargeSummary); showNotification('Copiado!', 'success'); } catch (e) { showNotification('Erro.', 'error'); } };
 
                 const getCategoryColor = (cat) => ({'Neurologia':'bg-purple-100 text-purple-800','Clínica Médica':'bg-blue-100 text-blue-800','Qualquer médico':'bg-green-100 text-green-800'}[cat] || 'bg-gray-100');
@@ -794,7 +873,10 @@
                     savePatients: updatePatientDoc, notifications, currentEvolutions, currentPendencies, searchQuery, openPatientDetails, closePatientDetails,
                     resolveIntercurrence, registerVisit, isVisitOverdue, windowWidth, isNotePanelOpen,
                     viewMode, sortBy, filterIntercurrence, printList, togglePrescription, saveCarePlan,
-                    pinInput, isPinVerified, verifyPin
+                    pinInput, isPinVerified, verifyPin,
+                    // New for confirm
+                    showConfirmDialog, confirmMessage, confirmAction, cancelConfirm, executeConfirm,
+                    checkRecordNumber
                 };
             }
         }).mount('#app');
