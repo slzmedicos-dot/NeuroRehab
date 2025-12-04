@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NeuroRehab Manager 5.2 (PIN Dynamic)</title>
+    <title>NeuroRehab Manager 5.3 (PIN Fixed)</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -168,7 +168,8 @@
                 <p class="text-sm text-gray-500 mb-6">Digite o PIN da equipe para liberar o acesso.</p>
                 
                 <div class="space-y-4">
-                    <input v-model="pinInput" type="tel" maxlength="6" class="block w-full text-center text-2xl tracking-[0.5em] font-bold rounded-md border-gray-300 border-2 p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="••••">
+                    <!-- Adicionado autocomplete="off" para não salvar o PIN -->
+                    <input v-model="pinInput" type="tel" maxlength="6" autocomplete="off" class="block w-full text-center text-2xl tracking-[0.5em] font-bold rounded-md border-gray-300 border-2 p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="••••">
                     <button @click="verifyPin" :disabled="!pinInput" class="w-full bg-blue-600 text-white py-2 rounded-md font-medium hover:bg-blue-700 transition-colors">Liberar Acesso</button>
                     <button @click="logout" class="text-xs text-gray-400 hover:text-gray-600 mt-4 underline">Não sou {{ currentUser.email }} (Sair)</button>
                 </div>
@@ -537,13 +538,12 @@
                     if (user) { 
                         currentUser.value = user; 
                         isAuthenticated.value = true;
-                        isPinVerified.value = false; // Reset PIN on new auth
+                        isPinVerified.value = false; 
                         loadPatients(); 
                     }
                     else { currentUser.value = null; isAuthenticated.value = false; patients.value = []; }
                 });
                 
-                // PIN Verification Logic
                 const verifyPin = async () => {
                     if (!pinInput.value) return;
                     try {
@@ -554,29 +554,32 @@
                             const realPin = docSnap.data().accessPin;
                             if (pinInput.value === realPin) {
                                 isPinVerified.value = true;
+                                pinInput.value = ''; // Limpa PIN após sucesso
                                 showNotification('Acesso autorizado.', 'success');
                             } else {
                                 showNotification('PIN incorreto.', 'error');
                                 pinInput.value = '';
                             }
                         } else {
-                            console.error("Configuração de PIN não encontrada (crie a coleção config/general/accessPin)");
-                            if (pinInput.value === "0000") isPinVerified.value = true; // Fallback
-                            else showNotification('Erro de configuração. Contate o admin.', 'error');
+                            console.error("Configuração de PIN não encontrada");
+                            if (pinInput.value === "0000") { 
+                                isPinVerified.value = true; 
+                                pinInput.value = '';
+                            } else showNotification('Erro de configuração.', 'error');
                         }
                     } catch (e) {
                         console.error(e);
-                        showNotification('Erro de conexão ao validar.', 'error');
+                        showNotification('Erro de conexão.', 'error');
                     }
                 };
 
                 const handleLogin = async () => {
                     isLoggingIn.value = true;
-                    try { await signInWithEmailAndPassword(auth, loginForm.value.email, loginForm.value.password); showNotification('Bem-vindo!', 'success'); } 
+                    try { await signInWithEmailAndPassword(auth, loginForm.value.email, loginForm.value.password); showNotification('Bem-vindo! Digite o PIN.', 'success'); } 
                     catch (error) { showNotification('Erro ao entrar.', 'error'); } finally { isLoggingIn.value = false; }
                 };
 
-                const logout = async () => { await signOut(auth); showNotification('Sessão encerrada.', 'success'); };
+                const logout = async () => { await signOut(auth); isPinVerified.value = false; pinInput.value = ''; showNotification('Sessão encerrada.', 'success'); };
 
                 const loadPatients = () => {
                     const q = query(collection(db, 'patients'), orderBy('admissionDate', 'desc'));
