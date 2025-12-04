@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NeuroRehab Manager 5.4 (Confirm & Undo)</title>
+    <title>NeuroRehab Manager 5.5 (Sort Fix)</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -50,6 +50,7 @@
         @media print {
             body * { visibility: hidden; }
             #app > :not(#print-section) { display: none !important; }
+            
             #print-section, #print-section * { visibility: visible; }
             #print-section {
                 display: block !important;
@@ -60,11 +61,19 @@
                 background: white;
                 font-family: Arial, sans-serif !important;
             }
-            .print-header { text-align: center; margin-bottom: 5px; border-bottom: 1px solid #000; padding-bottom: 2px; }
+
+            .print-header {
+                text-align: center;
+                margin-bottom: 5px;
+                border-bottom: 1px solid #000;
+                padding-bottom: 2px;
+            }
+
             table { width: 100%; border-collapse: collapse; font-size: 8pt; }
             th, td { border: 1px solid #000; padding: 3px 5px; text-align: left; vertical-align: top; }
             th { background-color: #eee !important; font-weight: bold; -webkit-print-color-adjust: exact; }
             tr { page-break-inside: avoid; }
+            
             .no-print, .fixed, .absolute { display: none !important; }
         }
     </style>
@@ -74,7 +83,7 @@
     <div id="app" class="h-full flex flex-col" v-cloak>
 
         <!-- Notificações -->
-        <div class="fixed top-4 right-4 z-[60] flex flex-col gap-2 pointer-events-none no-print">
+        <div class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none no-print">
             <transition-group name="fade">
                 <div v-for="notif in notifications" :key="notif.id" 
                      :class="['px-4 py-3 rounded shadow-lg text-white flex items-center min-w-[250px] pointer-events-auto', notif.type === 'error' ? 'bg-red-500' : 'bg-green-600']">
@@ -370,7 +379,7 @@
                         <button @click="activeTab = 'summary'" :class="['pb-3 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap', activeTab === 'summary' ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700']"><i class="fas fa-file-medical-alt mr-2"></i> Resumo Alta</button>
                     </div>
                     <div class="flex-grow overflow-hidden bg-gray-50 relative">
-                        <!-- TIMELINE (COM CONFIRMAÇÃO DE VISITA) -->
+                        <!-- TIMELINE -->
                         <div v-if="activeTab === 'timeline'" class="absolute inset-0 flex flex-col md:flex-row overflow-hidden">
                             <div class="flex-grow p-6 overflow-y-auto custom-scrollbar bg-gray-50 transition-all" :class="{'md:w-full': !isNotePanelOpen, 'md:w-2/3': isNotePanelOpen}">
                                 <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-6 flex justify-between items-center shadow-sm">
@@ -825,7 +834,7 @@
                     const newCount = Math.max(0, (selectedPatient.value.pendingCount || 1) - 1);
                     const newPreview = selectedPatient.value.pendingPreview.filter(p => p.description !== currentPendencies.value.find(c => c.id === taskId)?.description);
                     batch.update(doc(db, 'patients', pid), { pendingCount: newCount, pendingPreview: newPreview });
-                    try { await batch.commit(); } catch(e) { showNotification('Erro.', 'error'); }
+                    try { await batch.commit(); } catch(e) { showNotification('Erro ao deletar.', 'error'); }
                 };
 
                 const dischargePatient = async (p) => { await updatePatientDoc({ id: p.id, status: 'discharged', dischargeDate: new Date().toISOString() }); showNotification("Alta registrada.", "success"); };
