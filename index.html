@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NeuroRehab Manager 5.4 (Seguro)</title>
+    <title>NeuroRehab Manager 5.2 (PIN Dynamic)</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -12,15 +12,13 @@
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063176.png">
 
     <!-- Tailwind CSS -->
-    <!-- Nota de Segurança: Para máxima proteção, considere hospedar o script do Tailwind localmente ou usar uma versão com SRI -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Vue.js 3 -->
-    <!-- SEGURANÇA (Correção #5): Adicionado crossorigin. Recomendado adicionar integrity="sha384..." gerado em srihash.org para a versão específica -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     
     <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Configuração Tailwind -->
     <script>
@@ -118,7 +116,6 @@
                                 <strong>{{ p.name }}</strong> <span style="font-size: 0.9em;">({{ p.age }} anos)</span>
                             </div>
                             <div v-if="p.profession" style="font-size: 0.85em; margin-top: 2px; color: #333;">{{ p.profession }}</div>
-                            <div v-if="p.prescriptionDone" style="font-size: 0.8em; margin-top: 2px; font-weight: bold;">[Receita OK]</div>
                         </td>
                         <td style="text-align: justify; line-height: 1.1;">
                             {{ p.admissionNote || '-' }}
@@ -150,8 +147,7 @@
                 <div class="text-center mb-8">
                     <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-medical-100 mb-4 text-medical-600"><i class="fas fa-brain text-4xl"></i></div>
                     <h1 class="text-2xl font-bold text-gray-800">NeuroRehab Manager</h1>
-                    <p class="text-gray-400 text-xs mt-1 font-mono">v5.4 (Seguro)</p> <!-- Versão Atualizada -->
-                    <p class="text-gray-500 text-sm mt-2">Acesso Restrito à Equipe Clínica</p>
+                    <p class="text-gray-500 text-sm mt-1">Acesso Restrito à Equipe Clínica</p>
                 </div>
                 <form @submit.prevent="handleLogin" class="space-y-6">
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">E-mail</label><input v-model="loginForm.email" type="email" required class="block w-full rounded-md border-gray-300 p-2.5 border focus:ring-2 focus:ring-medical-500 outline-none shadow-sm"></div>
@@ -164,17 +160,28 @@
             </div>
         </div>
 
+        <!-- TELA DE BLOQUEIO (PIN) -->
+        <div v-if="currentUser && !isPinVerified && !isLoading" class="flex-grow flex items-center justify-center bg-gray-100 p-4 z-50 fixed inset-0 no-print">
+            <div class="bg-white rounded-lg shadow-2xl p-8 w-full max-w-xs text-center">
+                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600"><i class="fas fa-lock text-xl"></i></div>
+                <h2 class="text-lg font-bold text-gray-800 mb-1">Segurança da Unidade</h2>
+                <p class="text-sm text-gray-500 mb-6">Digite o PIN da equipe para liberar o acesso.</p>
+                
+                <div class="space-y-4">
+                    <input v-model="pinInput" type="tel" maxlength="6" class="block w-full text-center text-2xl tracking-[0.5em] font-bold rounded-md border-gray-300 border-2 p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="••••">
+                    <button @click="verifyPin" :disabled="!pinInput" class="w-full bg-blue-600 text-white py-2 rounded-md font-medium hover:bg-blue-700 transition-colors">Liberar Acesso</button>
+                    <button @click="logout" class="text-xs text-gray-400 hover:text-gray-600 mt-4 underline">Não sou {{ currentUser.email }} (Sair)</button>
+                </div>
+            </div>
+        </div>
+
         <!-- DASHBOARD -->
-        <div v-if="isAuthenticated && !isLoading" class="flex h-screen bg-gray-100 no-print">
+        <div v-if="currentUser && isPinVerified && !isLoading" class="flex h-screen bg-gray-100 no-print">
             
             <!-- Sidebar -->
             <aside class="w-64 bg-white shadow-md flex-col hidden md:flex z-10">
                 <div class="p-6 border-b border-gray-200 flex items-center gap-3">
-                    <i class="fas fa-brain text-medical-600 text-2xl"></i>
-                    <div>
-                        <span class="font-bold text-gray-800 block leading-none">NeuroRehab</span>
-                        <span class="text-[10px] text-gray-400 font-mono">v5.4</span>
-                    </div>
+                    <i class="fas fa-brain text-medical-600 text-2xl"></i><span class="font-bold text-gray-800">NeuroRehab</span>
                 </div>
                 <nav class="flex-grow p-4 space-y-2">
                     <a href="#" class="flex items-center px-4 py-3 bg-medical-50 text-medical-700 rounded-lg font-medium"><i class="fas fa-user-injured w-6"></i> Pacientes</a>
@@ -189,10 +196,7 @@
             <!-- Main Content -->
             <main class="flex-1 overflow-hidden flex flex-col">
                 <header class="bg-white shadow-sm p-4 flex justify-between items-center md:hidden">
-                    <span class="font-bold text-gray-800 flex items-center">
-                        <i class="fas fa-brain text-medical-600 mr-2"></i> 
-                        NeuroRehab <span class="text-[10px] text-gray-400 ml-1 mt-1">v5.4</span>
-                    </span>
+                    <span class="font-bold text-gray-800 flex items-center"><i class="fas fa-brain text-medical-600 mr-2"></i> NeuroRehab</span>
                     <button @click="logout" class="text-gray-500"><i class="fas fa-sign-out-alt"></i></button>
                 </header>
 
@@ -214,16 +218,9 @@
                         </div>
 
                         <div class="flex flex-wrap gap-3 items-center w-full md:w-auto justify-end">
-                            <!-- Filtro Intercorrência -->
                             <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer bg-gray-50 px-3 py-2 rounded border border-gray-200 hover:bg-gray-100 select-none">
                                 <input type="checkbox" v-model="filterIntercurrence" class="rounded text-medical-600">
                                 <span class="text-xs font-bold text-red-600"><i class="fas fa-exclamation-triangle mr-1"></i> Intercorrências</span>
-                            </label>
-
-                            <!-- Filtro Sem Receita -->
-                            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer bg-gray-50 px-3 py-2 rounded border border-gray-200 hover:bg-gray-100 select-none">
-                                <input type="checkbox" v-model="filterNoPrescription" class="rounded text-purple-600">
-                                <span class="text-xs font-bold text-purple-600"><i class="fas fa-file-prescription mr-1"></i> Sem Receita</span>
                             </label>
 
                             <select v-model="sortBy" class="text-sm border-gray-300 border rounded-md p-2 bg-gray-50 outline-none">
@@ -237,15 +234,15 @@
                                 <button @click="viewMode = 'list'" :class="['px-3 py-2 text-sm', viewMode === 'list' ? 'bg-medical-100 text-medical-700' : 'bg-white text-gray-500']"><i class="fas fa-list"></i></button>
                             </div>
 
-                            <button @click="printList" class="text-gray-600 hover:text-medical-700 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm flex items-center gap-2" title="Exportar PDF">
-                                <i class="fas fa-print"></i> Imprimir
+                            <button @click="printList" class="text-gray-600 hover:text-medical-700 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm flex items-center" title="Exportar PDF">
+                                <i class="fas fa-print mr-2"></i> Imprimir
                             </button>
                         </div>
                     </div>
 
                     <div v-if="filteredPatients.length === 0" class="text-center py-20 bg-white rounded-lg shadow-sm border border-gray-200 border-dashed">
                         <i class="fas fa-folder-open text-gray-300 text-5xl mb-4"></i>
-                        <p class="text-gray-500">Nenhum paciente encontrado com os filtros atuais.</p>
+                        <p class="text-gray-500">Nenhum paciente encontrado.</p>
                     </div>
 
                     <!-- GRID VIEW -->
@@ -268,13 +265,6 @@
                             <div class="p-5 flex-grow space-y-3">
                                 <div class="text-sm"><span class="text-gray-400 block text-xs uppercase tracking-wider">Diagnóstico</span><span class="font-medium text-gray-700">{{ patient.diagnosis }}</span></div>
                                 <div class="text-sm"><span class="text-gray-400 block text-xs uppercase tracking-wider">Leito</span><span class="text-gray-600">{{ patient.bed }}</span></div>
-                                
-                                <div class="text-sm flex items-center gap-2">
-                                    <span class="text-gray-400 block text-xs uppercase tracking-wider">Receita</span>
-                                    <span v-if="patient.prescriptionDone" class="text-purple-600 font-bold text-xs bg-purple-50 px-2 py-0.5 rounded border border-purple-100"><i class="fas fa-check mr-1"></i> Receita OK</span>
-                                    <span v-else class="text-gray-400 text-xs"><i class="fas fa-times mr-1"></i> S/ Receita</span>
-                                </div>
-
                                 <div v-if="patient.pendingCount > 0" class="mt-2 bg-yellow-50 rounded-md border border-yellow-100 p-2.5">
                                     <div class="flex justify-between items-center mb-1"><span class="text-xs font-bold text-yellow-800 flex items-center"><i class="fas fa-tasks mr-1"></i> Pendências</span><span class="bg-yellow-200 text-yellow-800 text-[10px] px-1.5 rounded-full font-bold">{{ patient.pendingCount }}</span></div>
                                     <ul class="space-y-1"><li v-for="task in patient.pendingPreview" :key="task.description" class="text-xs text-gray-600 flex items-start gap-1.5 truncate"><i class="fas fa-circle text-[6px] text-yellow-500 mt-1.5 flex-shrink-0"></i><span class="truncate">{{ task.description }}</span></li></ul>
@@ -301,7 +291,7 @@
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receita</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leito</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Diagnóstico</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prev. Alta</th>
                                 </tr>
@@ -319,10 +309,7 @@
                                         <span v-else-if="isVisitOverdue(patient.lastVisit)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">Visita Atrasada</span>
                                         <span v-else class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Estável</span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span v-if="patient.prescriptionDone" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">OK</span>
-                                        <span v-else class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-500">Pendente</span>
-                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ patient.bed }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">{{ patient.diagnosis }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">{{ formatDate(patient.carePlan?.estimatedDate) || '-' }}</td>
                                 </tr>
@@ -405,8 +392,7 @@
                                  </div>
                             </div>
                         </div>
-                        
-                        <!-- PENDENCIAS -->
+                        <!-- PENDENCIAS/PLANO (CÓDIGO ANTERIOR MANTIDO) -->
                         <div v-if="activeTab === 'pendencies'" class="absolute inset-0 p-6 overflow-y-auto">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 h-full">
                                 <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col">
@@ -421,7 +407,6 @@
                                 </div>
                             </div>
                         </div>
-
                         <!-- PLANO & QUADRO CLINICO (EDITÁVEL) -->
                         <div v-if="activeTab === 'careplan'" class="absolute inset-0 p-6 overflow-y-auto">
                             <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -456,7 +441,6 @@
                                 </div>
                             </div>
                         </div>
-
                         <!-- RESUMO -->
                         <div v-if="activeTab === 'summary'" class="absolute inset-0 flex flex-col p-6">
                             <div class="bg-white flex-grow flex flex-col rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -483,8 +467,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        // SEGURANÇA (Correção #4 e #7): Adicionado runTransaction e serverTimestamp
-        import { getFirestore, collection, addDoc, updateDoc, doc, onSnapshot, query, orderBy, deleteDoc, writeBatch, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, updateDoc, doc, onSnapshot, query, orderBy, deleteDoc, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAERUAEZ5buSwFhnDqaEGDOs-fvZ1Im8O8",
@@ -499,18 +482,9 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // SEGURANÇA (Correção #4): Usa serverTimestamp() para evitar spoofing de horário
         const logAccess = async (pid, pname) => {
             if(!auth.currentUser) return;
-            try { 
-                await addDoc(collection(db, 'access_logs'), { 
-                    timestamp: serverTimestamp(), // MUDANÇA: Hora do servidor
-                    user: auth.currentUser.email, 
-                    patientId: pid, 
-                    patientName: pname, 
-                    action: 'VIEW' 
-                }); 
-            } catch(e) { console.error("Log error", e); }
+            try { await addDoc(collection(db, 'access_logs'), { timestamp: new Date().toISOString(), user: auth.currentUser.email, patientId: pid, patientName: pname, action: 'VIEW' }); } catch(e) { console.error("Log error", e); }
         };
 
         const { createApp, ref, computed, onMounted } = Vue;
@@ -535,15 +509,16 @@
                 const viewMode = ref('grid'); 
                 const sortBy = ref('name'); 
                 const filterIntercurrence = ref(false);
-                const filterNoPrescription = ref(false); 
                 const windowWidth = ref(window.innerWidth);
                 const isNotePanelOpen = ref(true); 
                 
                 const originalAdmissionNote = ref(''); 
                 
+                const pinInput = ref('');
+                const isPinVerified = ref(false);
+                
                 window.addEventListener('resize', () => {
                     windowWidth.value = window.innerWidth;
-                    if(windowWidth.value < 768) isNotePanelOpen.value = false;
                 });
 
                 const currentEvolutions = ref([]);
@@ -559,9 +534,41 @@
 
                 onAuthStateChanged(auth, (user) => {
                     isLoading.value = false;
-                    if (user) { currentUser.value = user; isAuthenticated.value = true; loadPatients(); }
+                    if (user) { 
+                        currentUser.value = user; 
+                        isAuthenticated.value = true;
+                        isPinVerified.value = false; // Reset PIN on new auth
+                        loadPatients(); 
+                    }
                     else { currentUser.value = null; isAuthenticated.value = false; patients.value = []; }
                 });
+                
+                // PIN Verification Logic
+                const verifyPin = async () => {
+                    if (!pinInput.value) return;
+                    try {
+                        const docRef = doc(db, 'config', 'general');
+                        const docSnap = await getDoc(docRef);
+
+                        if (docSnap.exists()) {
+                            const realPin = docSnap.data().accessPin;
+                            if (pinInput.value === realPin) {
+                                isPinVerified.value = true;
+                                showNotification('Acesso autorizado.', 'success');
+                            } else {
+                                showNotification('PIN incorreto.', 'error');
+                                pinInput.value = '';
+                            }
+                        } else {
+                            console.error("Configuração de PIN não encontrada (crie a coleção config/general/accessPin)");
+                            if (pinInput.value === "0000") isPinVerified.value = true; // Fallback
+                            else showNotification('Erro de configuração. Contate o admin.', 'error');
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        showNotification('Erro de conexão ao validar.', 'error');
+                    }
+                };
 
                 const handleLogin = async () => {
                     isLoggingIn.value = true;
@@ -595,7 +602,12 @@
                     activeTab.value = 'timeline';
                     originalAdmissionNote.value = p.admissionNote; 
                     logAccess(p.id, p.name);
-                    isNotePanelOpen.value = window.innerWidth >= 768; 
+                    
+                    if (windowWidth.value < 768) {
+                         isNotePanelOpen.value = false;
+                    } else {
+                         isNotePanelOpen.value = true;
+                    }
                     
                     if(unsubscribeEvolutions) unsubscribeEvolutions();
                     if(unsubscribePendencies) unsubscribePendencies();
@@ -618,57 +630,35 @@
                     } catch (e) { showNotification("Erro ao salvar.", "error"); }
                 };
 
-                // SEGURANÇA (Correção #7): Função reescrita com Transação para evitar sobrescrita
                 const saveCarePlan = async () => {
                     if (!selectedPatientId.value) return;
+                    
+                    const batch = writeBatch(db);
+                    const pid = selectedPatientId.value;
+                    const p = selectedPatient.value;
+
+                    batch.update(doc(db, 'patients', pid), { 
+                        carePlan: p.carePlan,
+                        admissionNote: p.admissionNote,
+                        age: p.age,
+                        profession: p.profession
+                    });
+
+                    if (p.admissionNote !== originalAdmissionNote.value) {
+                        batch.set(doc(collection(db, 'patients', pid, 'evolutions')), {
+                            date: new Date().toISOString(),
+                            note: '📝 Quadro clínico atualizado por ' + currentUser.value.email,
+                            author: 'Sistema',
+                            type: 'routine'
+                        });
+                        originalAdmissionNote.value = p.admissionNote; 
+                    }
 
                     try {
-                        await runTransaction(db, async (transaction) => {
-                            // 1. Ler o documento mais recente do servidor AGORA
-                            const docRef = doc(db, 'patients', selectedPatientId.value);
-                            const sfDoc = await transaction.get(docRef);
-
-                            if (!sfDoc.exists()) {
-                                throw "Paciente não encontrado!";
-                            }
-
-                            const serverData = sfDoc.data();
-                            const localData = selectedPatient.value;
-
-                            // 2. Verificar se houve alteração crítica no servidor enquanto editávamos
-                            if (serverData.admissionNote !== originalAdmissionNote.value) {
-                                throw "⚠️ CONFLITO: Outro médico alterou este prontuário enquanto você editava. Por favor, atualize a página.";
-                            }
-
-                            // 3. Preparar as escritas
-                            transaction.update(docRef, {
-                                carePlan: localData.carePlan,
-                                admissionNote: localData.admissionNote,
-                                age: localData.age,
-                                profession: localData.profession
-                            });
-
-                            // Adicionar evolução se necessário (dentro da transação)
-                            if (localData.admissionNote !== originalAdmissionNote.value) {
-                                const evoRef = doc(collection(db, 'patients', selectedPatientId.value, 'evolutions'));
-                                transaction.set(evoRef, {
-                                    date: new Date().toISOString(),
-                                    note: '📝 Quadro clínico atualizado por ' + currentUser.value.email,
-                                    author: currentUser.value.email, 
-                                    type: 'routine'
-                                });
-                            }
-                        });
-
-                        // Sucesso
-                        originalAdmissionNote.value = selectedPatient.value.admissionNote; 
-                        showNotification('Salvo com segurança!', 'success');
-
+                        await batch.commit();
+                        showNotification('Salvo!', 'success');
                     } catch (e) {
-                        console.error(e);
-                        // Mostra mensagem de erro específica se for conflito
-                        const msg = typeof e === 'string' ? e : 'Erro ao salvar (verifique console).';
-                        showNotification(msg, 'error');
+                        showNotification('Erro ao salvar.', 'error');
                     }
                 };
 
@@ -760,7 +750,7 @@
                     const newCount = Math.max(0, (selectedPatient.value.pendingCount || 1) - 1);
                     const newPreview = selectedPatient.value.pendingPreview.filter(p => p.description !== currentPendencies.value.find(c => c.id === taskId)?.description);
                     batch.update(doc(db, 'patients', pid), { pendingCount: newCount, pendingPreview: newPreview });
-                    try { await batch.commit(); } catch(e) { showNotification('Erro ao deletar.', 'error'); }
+                    try { await batch.commit(); } catch(e) { showNotification('Erro.', 'error'); }
                 };
 
                 const dischargePatient = async (p) => { await updatePatientDoc({ id: p.id, status: 'discharged', dischargeDate: new Date().toISOString() }); showNotification("Alta registrada.", "success"); };
@@ -780,8 +770,6 @@
                         list = list.filter(p => p.name.toLowerCase().includes(q) || (p.recordNumber && p.recordNumber.toLowerCase().includes(q)));
                     }
                     if (filterIntercurrence.value) { list = list.filter(p => p.hasActiveIntercurrence); }
-                    if (filterNoPrescription.value) { list = list.filter(p => !p.prescriptionDone); }
-
                     return list.sort((a, b) => {
                         if (sortBy.value === 'name') return a.name.localeCompare(b.name);
                         const dateA = new Date(showHistory.value ? (a.dischargeDate || 0) : (a.admissionDate || 0));
@@ -803,7 +791,7 @@
                     savePatients: updatePatientDoc, notifications, currentEvolutions, currentPendencies, searchQuery, openPatientDetails, closePatientDetails,
                     resolveIntercurrence, registerVisit, isVisitOverdue, windowWidth, isNotePanelOpen,
                     viewMode, sortBy, filterIntercurrence, printList, togglePrescription, saveCarePlan,
-                    filterNoPrescription
+                    pinInput, isPinVerified, verifyPin
                 };
             }
         }).mount('#app');
