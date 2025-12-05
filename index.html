@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NeuroRehab Manager 6.8 (Simple PIN)</title>
+    <title>NeuroRehab Manager 7.0 (Google + PIN)</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -54,7 +54,9 @@
             #print-section {
                 display: block !important;
                 position: absolute;
-                left: 0; top: 0; width: 100%;
+                left: 0;
+                top: 0;
+                width: 100%;
                 background: white;
                 font-family: Arial, sans-serif !important;
             }
@@ -134,7 +136,7 @@
                         <i v-else class="fab fa-google text-red-500 mr-3 text-xl"></i>
                         {{ isLoggingIn ? 'Conectando...' : 'Entrar com Google' }}
                     </button>
-                    <div class="text-center text-xs text-gray-400 border-t pt-4"><p><i class="fas fa-lock mr-1"></i> Acesso apenas para e-mails autorizados.</p></div>
+                    <div class="text-center text-xs text-gray-400 border-t pt-4"><p><i class="fas fa-lock mr-1"></i> Acesso permitido apenas para e-mails autorizados.</p></div>
                 </div>
             </div>
         </div>
@@ -181,6 +183,7 @@
                         <button v-if="!showHistory" @click="openModal" class="bg-medical-600 hover:bg-medical-700 text-white px-4 py-2 rounded-lg shadow-sm flex items-center"><i class="fas fa-plus mr-2"></i> Novo Paciente</button>
                     </div>
 
+                    <!-- Ferramentas -->
                     <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
                         <div class="relative w-full md:w-1/3"><span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-search"></i></span><input v-model="searchQuery" type="text" class="pl-10 block w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm focus:ring-medical-500 outline-none" placeholder="Nome ou prontuário..."></div>
                         <div class="flex flex-wrap gap-3 items-center w-full md:w-auto justify-end">
@@ -194,6 +197,7 @@
 
                     <div v-if="filteredPatients.length === 0" class="text-center py-20 bg-white rounded-lg shadow-sm border border-gray-200 border-dashed"><i class="fas fa-folder-open text-gray-300 text-5xl mb-4"></i><p class="text-gray-500">Nenhum paciente encontrado.</p></div>
 
+                    <!-- GRID VIEW -->
                     <div v-if="viewMode === 'grid' && filteredPatients.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div v-for="patient in filteredPatients" :key="patient.id" @click="openPatientDetails(patient)" class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md cursor-pointer transition-all flex flex-col relative group">
                             <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 z-30 flex flex-col items-center gap-1 w-full">
@@ -213,7 +217,10 @@
                                 </div>
                                 <div class="flex justify-between items-end border-t border-dashed pt-2 mt-2">
                                     <div v-if="patient.carePlan && patient.carePlan.estimatedDate" class="text-sm"><span class="text-medical-600 text-xs font-bold uppercase tracking-wider block">Previsão Alta</span><span class="text-gray-800 font-bold bg-blue-50 px-2 py-0.5 rounded text-xs border border-blue-100">{{ formatDate(patient.carePlan.estimatedDate) }}</span></div>
-                                    <div class="text-right text-xs"><span class="text-gray-400 block uppercase tracking-wider text-[10px]">Última Visita</span><span :class="['font-medium', isVisitOverdue(patient.lastVisit) ? 'text-orange-600 font-bold' : 'text-gray-600']">{{ formatDate(patient.lastVisit) || 'Nunca' }}</span><div v-if="patient.prescriptionDone" class="mt-2"><span class="bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-1 rounded border border-purple-200 inline-flex items-center"><i class="fas fa-file-prescription mr-1"></i> Receita OK</span></div></div>
+                                    <div class="text-right text-xs">
+                                        <span class="text-gray-400 block uppercase tracking-wider text-[10px]">Última Visita</span><span :class="['font-medium', isVisitOverdue(patient.lastVisit) ? 'text-orange-600 font-bold' : 'text-gray-600']">{{ formatDate(patient.lastVisit) || 'Nunca' }}</span>
+                                        <div v-if="patient.prescriptionDone" class="mt-2"><span class="bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-1 rounded border border-purple-200 inline-flex items-center"><i class="fas fa-file-prescription mr-1"></i> Receita OK</span></div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="p-4 bg-gray-50 rounded-b-xl border-t border-gray-100 flex justify-end gap-2" v-if="patient.status === 'active'"><button @click.stop="confirmAction('discharge', patient)" class="text-sm text-medical-600 hover:text-medical-800 font-medium px-3 py-1.5 rounded hover:bg-medical-50 z-10"><i class="fas fa-check-circle mr-1"></i> Dar Alta</button></div>
@@ -221,6 +228,7 @@
                         </div>
                     </div>
                     
+                    <!-- LIST VIEW -->
                     <div v-else class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                          <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leito</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Diagnóstico</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prev. Alta</th></tr></thead>
@@ -272,6 +280,7 @@
             try { await addDoc(collection(db, 'access_logs'), { timestamp: new Date().toISOString(), user: auth.currentUser.email, patientId: pid, patientName: pname, action: 'VIEW' }); } catch(e) { console.error("Log error", e); }
         };
 
+        // HASHING (Ainda presente para gerar o código se precisar)
         async function hashPin(pin, salt) {
             const encoder = new TextEncoder();
             const data = encoder.encode(pin + salt);
@@ -356,6 +365,7 @@
 
                         if (docSnap.exists()) {
                             const data = docSnap.data();
+                            // SUPORTE DUPLO: Aceita PIN normal OU Hash
                             if (data.securityHash && data.securitySalt) {
                                 const inputHash = await hashPin(pinInput.value, data.securitySalt);
                                 if (inputHash === data.securityHash) {
@@ -428,11 +438,18 @@
                     activeTab.value = 'timeline';
                     originalAdmissionNote.value = p.admissionNote; 
                     logAccess(p.id, p.name);
+                    
                     if (windowWidth.value < 768) { isNotePanelOpen.value = false; } else { isNotePanelOpen.value = true; }
+                    
                     if(unsubscribeEvolutions) unsubscribeEvolutions();
                     if(unsubscribePendencies) unsubscribePendencies();
-                    unsubscribeEvolutions = onSnapshot(query(collection(db, 'patients', p.id, 'evolutions'), orderBy('date', 'desc')), (snap) => { currentEvolutions.value = snap.docs.map(d => ({ id: d.id, ...d.data() })); });
-                    unsubscribePendencies = onSnapshot(collection(db, 'patients', p.id, 'pendencies'), (snap) => { currentPendencies.value = snap.docs.map(d => ({ id: d.id, ...d.data() })); });
+
+                    unsubscribeEvolutions = onSnapshot(query(collection(db, 'patients', p.id, 'evolutions'), orderBy('date', 'desc')), (snap) => {
+                        currentEvolutions.value = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    });
+                    unsubscribePendencies = onSnapshot(collection(db, 'patients', p.id, 'pendencies'), (snap) => {
+                        currentPendencies.value = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    });
                 };
 
                 const closePatientDetails = () => { selectedPatientId.value = null; currentEvolutions.value = []; currentPendencies.value = []; };
