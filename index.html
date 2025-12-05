@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NeuroRehab Manager 6.4 (Fixed)</title>
+    <title>NeuroRehab Manager 6.6 (Google Login)</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -44,12 +44,13 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
         [v-cloak] { display: none; }
 
-        /* --- SISTEMA DE IMPRESSÃO --- */
+        /* --- SISTEMA DE IMPRESSÃO COMPACTO --- */
         #print-section { display: none; }
 
         @media print {
             body * { visibility: hidden; }
             #app > :not(#print-section) { display: none !important; }
+            
             #print-section, #print-section * { visibility: visible; }
             #print-section {
                 display: block !important;
@@ -153,7 +154,7 @@
             </table>
         </div>
 
-        <!-- TELA DE LOGIN (GOOGLE) -->
+        <!-- TELA DE LOGIN (APENAS GOOGLE) -->
         <div v-if="!isAuthenticated && !isLoading" class="flex-grow flex items-center justify-center bg-medical-900 p-4 no-print">
             <div class="bg-white rounded-lg shadow-2xl p-8 w-full max-w-md">
                 <div class="text-center mb-8">
@@ -164,6 +165,7 @@
                     <p class="text-gray-500 text-sm mt-1">Acesso Restrito à Equipe Clínica</p>
                 </div>
                 
+                <!-- Botão Único do Google -->
                 <div class="space-y-6">
                     <button @click="handleGoogleLogin" :disabled="isLoggingIn" class="w-full flex items-center justify-center py-3 px-4 rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 shadow-sm font-medium transition-colors disabled:opacity-50">
                         <i v-if="isLoggingIn" class="fas fa-circle-notch fa-spin mr-3 text-medical-600"></i>
@@ -172,7 +174,7 @@
                     </button>
                     
                     <div class="text-center text-xs text-gray-400 border-t pt-4">
-                        <p><i class="fas fa-lock mr-1"></i> Acesso apenas para e-mails autorizados.</p>
+                        <p><i class="fas fa-lock mr-1"></i> Acesso permitido apenas para e-mails previamente cadastrados.</p>
                     </div>
                 </div>
             </div>
@@ -253,12 +255,6 @@
                                 <input type="checkbox" v-model="filterNoPrescription" class="rounded text-purple-600">
                                 <span class="text-xs font-bold text-purple-600"><i class="fas fa-file-prescription mr-1"></i> Sem Receita</span>
                             </label>
-                            <select v-model="sortBy" class="text-sm border-gray-300 border rounded-md p-2 bg-gray-50 outline-none">
-                                <option value="nameAsc">Nome (A-Z)</option>
-                                <option value="nameDesc">Nome (Z-A)</option>
-                                <option value="dateAsc">Data Prev. (Próxima)</option>
-                                <option value="dateDesc">Data Prev. (Distante)</option>
-                            </select>
                             <div class="flex border border-gray-300 rounded-md overflow-hidden">
                                 <button @click="viewMode = 'grid'" :class="['px-3 py-2 text-sm', viewMode === 'grid' ? 'bg-medical-100 text-medical-700' : 'bg-white text-gray-500']"><i class="fas fa-th-large"></i></button>
                                 <button @click="viewMode = 'list'" :class="['px-3 py-2 text-sm', viewMode === 'list' ? 'bg-medical-100 text-medical-700' : 'bg-white text-gray-500']"><i class="fas fa-list"></i></button>
@@ -306,7 +302,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- AÇÕES -->
+                            <!-- AÇÕES COM CONFIRMAÇÃO -->
                             <div class="p-4 bg-gray-50 rounded-b-xl border-t border-gray-100 flex justify-end gap-2" v-if="patient.status === 'active'">
                                 <button @click.stop="confirmAction('discharge', patient)" class="text-sm text-medical-600 hover:text-medical-800 font-medium px-3 py-1.5 rounded hover:bg-medical-50 z-10"><i class="fas fa-check-circle mr-1"></i> Dar Alta</button>
                             </div>
@@ -360,7 +356,7 @@
             </main>
         </div>
 
-        <!-- MODAL NOVO PACIENTE -->
+        <!-- MODAL NOVO PACIENTE (CÓDIGO MANTIDO) -->
         <div v-if="showModal" class="fixed inset-0 z-40 overflow-y-auto no-print"><div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"><div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="closeModal"></div><div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full relative z-50"><div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4"><h3 class="text-lg font-medium text-gray-900 mb-4">Adicionar Paciente / Nova Internação</h3><div class="space-y-4"><div class="bg-blue-50 p-3 rounded-md border border-blue-100 mb-4"><label class="block text-sm font-bold text-blue-800 mb-1">Data da Internação</label><input type="date" v-model="newPatient.admissionDate" class="block w-full rounded-md border-blue-200 py-1.5 px-3 sm:text-sm"></div><div class="grid grid-cols-3 gap-4"><div class="col-span-1"><label class="block text-sm font-medium text-gray-700">Prontuário</label><input type="text" v-model="newPatient.recordNumber" @blur="checkRecordNumber" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 sm:text-sm" placeholder="Digite para buscar..."></div><div class="col-span-2"><label class="block text-sm font-medium text-gray-700">Nome Completo</label><input type="text" v-model="newPatient.name" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 sm:text-sm"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-gray-700">Idade</label><input type="number" v-model="newPatient.age" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 sm:text-sm"></div><div><label class="block text-sm font-medium text-gray-700">Leito</label><input type="text" v-model="newPatient.bed" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 sm:text-sm"></div></div><div><label class="block text-sm font-medium text-gray-700">Profissão / Escolaridade</label><input type="text" v-model="newPatient.profession" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 sm:text-sm" placeholder="Ex: Professor / Superior Completo"></div><div><label class="block text-sm font-medium text-gray-700">Diagnóstico</label><select v-model="newPatient.diagnosis" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 sm:text-sm"><option value="" disabled>Selecione...</option><option>AVE (Acidente Vascular Encefálico)</option><option>TCE (Traumatismo Cranioencefálico)</option><option>Lesão Medular</option><option>Doença de Parkinson</option><option>Outro</option></select></div><div><label class="block text-sm font-medium text-gray-700">Quadro clínico e Comorbidades</label><textarea v-model="newPatient.notes" rows="2" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 sm:text-sm" placeholder="Resumo do quadro inicial..."></textarea></div></div></div><div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse"><button type="button" @click="addPatient" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-medical-600 text-base font-medium text-white hover:bg-medical-700 sm:ml-3 sm:w-auto sm:text-sm">Confirmar</button><button type="button" @click="closeModal" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancelar</button></div></div></div></div>
         
         <!-- MODAL DETALHES -->
@@ -383,6 +379,11 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+
+        // Service Worker
+        if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.protocol === 'http:')) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js')); 
+        }
 
         try { enableIndexedDbPersistence(db).catch(e => console.log("Offline disabled")); } catch(e){}
 
@@ -509,7 +510,14 @@
                         await signInWithPopup(auth, provider); 
                         showNotification('Bem-vindo!', 'success'); 
                     } 
-                    catch (error) { showNotification('Erro ao entrar com Google.', 'error'); } 
+                    catch (error) { 
+                        console.error(error);
+                        if (error.code === 'auth/unauthorized-domain') {
+                            showNotification('Erro: Domínio não autorizado no Firebase.', 'error');
+                        } else {
+                            showNotification('Erro ao entrar com Google.', 'error'); 
+                        }
+                    } 
                     finally { isLoggingIn.value = false; }
                 };
 
@@ -707,6 +715,7 @@
                     newPendency, addPendency, deletePendency, copySummary, getCategoryColor, getInitials, formatDate,
                     savePatients: updatePatientDoc, notifications, currentEvolutions, currentPendencies, searchQuery, openPatientDetails, closePatientDetails,
                     resolveIntercurrence, registerVisit, isVisitOverdue, windowWidth, isNotePanelOpen,
+                    // New Exports
                     viewMode, sortBy, filterIntercurrence, filterNoPrescription, printList, togglePrescription, saveCarePlan,
                     pinInput, isPinVerified, verifyPin,
                     showConfirmDialog, confirmMessage, confirmAction, cancelConfirm, executeConfirm, checkRecordNumber
