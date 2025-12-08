@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NeuroRehab Manager 7.5 (Detail View)</title>
+    <title>NeuroRehab Manager 7.6 (Detail View)</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0284c7">
-    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3063/3063176.png">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063176.png">
+    <!-- Ícone atualizado para o arquivo local -->
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -77,8 +78,8 @@
         <div class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none no-print">
             <transition-group name="fade">
                 <div v-for="notif in notifications" :key="notif.id" 
-                     :class="['px-4 py-3 rounded shadow-lg text-white flex items-center min-w-[250px] pointer-events-auto', notif.type === 'error' ? 'bg-red-500' : 'bg-green-600']">
-                    <i :class="['fas mr-2', notif.type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle']"></i>
+                     :class="['px-4 py-3 rounded shadow-lg text-white flex items-center min-w-[250px] pointer-events-auto', notif.type === 'error' ? 'bg-red-500' : (notif.type === 'warn' ? 'bg-orange-500' : 'bg-green-600')]">
+                    <i :class="['fas mr-2', notif.type === 'error' ? 'fa-exclamation-circle' : (notif.type === 'warn' ? 'fa-clock' : 'fa-check-circle')]"></i>
                     {{ notif.message }}
                 </div>
             </transition-group>
@@ -386,8 +387,32 @@
                 const isNotePanelOpen = ref(true); 
                 
                 const originalAdmissionNote = ref(''); 
+
+                // --- SISTEMA DE INATIVIDADE (4 HORAS) ---
+                const INACTIVITY_LIMIT = 4 * 60 * 60 * 1000; // 4 horas
+                const lastActivity = ref(Date.now());
+                let inactivityInterval = null;
+
+                const updateActivity = () => {
+                    lastActivity.value = Date.now();
+                };
+
+                const checkInactivity = () => {
+                    if (isAuthenticated.value && (Date.now() - lastActivity.value > INACTIVITY_LIMIT)) {
+                        logout();
+                        showNotification('Sessão encerrada por inatividade (4h).', 'warn');
+                    }
+                };
                 
-                window.addEventListener('resize', () => { windowWidth.value = window.innerWidth; });
+                window.addEventListener('resize', () => { windowWidth.value = window.innerWidth; updateActivity(); });
+                window.addEventListener('mousemove', updateActivity);
+                window.addEventListener('click', updateActivity);
+                window.addEventListener('keydown', updateActivity);
+                window.addEventListener('touchstart', updateActivity);
+
+                // Check a cada minuto
+                setInterval(checkInactivity, 60000); 
+                // ------------------------------------------
 
                 const currentEvolutions = ref([]);
                 const currentPendencies = ref([]);
@@ -416,6 +441,7 @@
                     if (user) { 
                         currentUser.value = user; 
                         isAuthenticated.value = true;
+                        updateActivity(); // Reinicia timer ao logar
                         loadPatients(); 
                     }
                     else { currentUser.value = null; isAuthenticated.value = false; patients.value = []; }
