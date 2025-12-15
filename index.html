@@ -125,9 +125,6 @@
                         <td style="text-align: justify; line-height: 1.1;">{{ p.admissionNote || '-' }}</td>
                         <td><ul v-if="p.pendingPreview && p.pendingPreview.length" style="list-style-type: disc; padding-left: 12px; margin: 0; line-height: 1.1;"><li v-for="t in p.pendingPreview">{{ t.description }}</li></ul><span v-else>-</span></td>
                         <td style="text-align: center; font-size: 7.5pt;">
-                            <!-- MODIFICAÇÃO: Inclusão da Data de Internação no Relatório -->
-                            <div style="margin-bottom: 5px;"><b>Internação:</b><br>{{ formatDate(p.admissionDate) }}</div>
-                            
                             <div v-if="p.status === 'active'"><b>Alta Prev:</b><br>{{ formatDate(p.carePlan?.estimatedDate) || '?' }}</div>
                             <div v-else><b>Alta Real:</b><br>{{ formatDate(p.dischargeDate) }}</div>
                             <div style="margin-top: 5px;"><b>Últ. Visita:</b><br>{{ formatDate(p.lastVisit) || '-' }}</div>
@@ -806,3 +803,4 @@
     </script>
 </body>
 </html>
+
