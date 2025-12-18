@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NeuroRehab Manager 7.7 (Secure)</title>
+    <title>NeuroRehab Manager 7.9</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -184,7 +184,7 @@
                         <span v-if="!isSidebarCollapsed" class="font-bold text-gray-800 whitespace-nowrap">NeuroRehab</span>
                     </div>
                     <!-- Versão -->
-                    <div v-if="!isSidebarCollapsed" class="text-xs text-gray-400 mt-1 pl-9">v7.7</div>
+                    <div v-if="!isSidebarCollapsed" class="text-xs text-gray-400 mt-1 pl-9">v7.9</div>
                 </div>
                 
                 <nav class="flex-grow p-4 space-y-2 overflow-x-hidden">
@@ -218,7 +218,7 @@
 
             <!-- Main Content -->
             <main class="flex-1 overflow-hidden flex flex-col">
-                <header class="bg-white shadow-sm p-4 flex justify-between items-center md:hidden"><span class="font-bold text-gray-800 flex items-center"><i class="fas fa-brain text-medical-600 mr-2"></i> NeuroRehab <span class="text-xs text-gray-400 ml-2">v7.7</span></span><button @click="logout" class="text-gray-500"><i class="fas fa-sign-out-alt"></i></button></header>
+                <header class="bg-white shadow-sm p-4 flex justify-between items-center md:hidden"><span class="font-bold text-gray-800 flex items-center"><i class="fas fa-brain text-medical-600 mr-2"></i> NeuroRehab <span class="text-xs text-gray-400 ml-2">v7.9</span></span><button @click="logout" class="text-gray-500"><i class="fas fa-sign-out-alt"></i></button></header>
 
                 <div class="flex-1 overflow-y-auto p-4 md:p-8">
                     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
@@ -228,11 +228,25 @@
 
                     <!-- Ferramentas -->
                     <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
-                        <div class="relative w-full md:w-1/3"><span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-search"></i></span><input v-model="searchQuery" type="text" class="pl-10 block w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm focus:ring-medical-500 outline-none" placeholder="Nome ou prontuário..."></div>
-                        <div class="flex flex-wrap gap-3 items-center w-full md:w-auto justify-end">
-                            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer bg-gray-50 px-3 py-2 rounded border border-gray-200 hover:bg-gray-100 select-none"><input type="checkbox" v-model="filterIntercurrence" class="rounded text-medical-600"><span class="text-xs font-bold text-red-600"><i class="fas fa-exclamation-triangle mr-1"></i> Intercorrências</span></label>
-                            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer bg-gray-50 px-3 py-2 rounded border border-gray-200 hover:bg-gray-100 select-none"><input type="checkbox" v-model="filterNoPrescription" class="rounded text-purple-600"><span class="text-xs font-bold text-purple-600"><i class="fas fa-file-prescription mr-1"></i> Sem Receita</span></label>
-                            <select v-model="sortBy" class="text-sm border-gray-300 border rounded-md p-2 bg-gray-50 outline-none">
+                        <div class="relative w-full md:w-1/4"><span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-search"></i></span><input v-model="searchQuery" type="text" class="pl-10 block w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm focus:ring-medical-500 outline-none" placeholder="Nome ou prontuário..."></div>
+                        <div class="flex flex-wrap gap-2 items-center w-full md:w-auto justify-end flex-1">
+                            
+                            <!-- NOVOS FILTROS DE ALTA -->
+                            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer bg-red-50 px-3 py-2 rounded border border-red-100 hover:bg-red-100 select-none transition-colors" title="Mostrar apenas altas vencidas">
+                                <input type="checkbox" v-model="filterDischargeOverdue" class="rounded text-red-600 focus:ring-red-500">
+                                <span class="text-xs font-bold text-red-700"><i class="fas fa-calendar-times mr-1"></i> Alta Vencida</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer bg-yellow-50 px-3 py-2 rounded border border-yellow-100 hover:bg-yellow-100 select-none transition-colors" title="Mostrar altas previstas para esta semana">
+                                <input type="checkbox" v-model="filterDischargeWeek" class="rounded text-yellow-600 focus:ring-yellow-500">
+                                <span class="text-xs font-bold text-yellow-700"><i class="fas fa-calendar-week mr-1"></i> Alta Semana</span>
+                            </label>
+
+                            <div class="h-8 w-px bg-gray-300 mx-1 hidden md:block"></div>
+
+                            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer bg-gray-50 px-3 py-2 rounded border border-gray-200 hover:bg-gray-100 select-none"><input type="checkbox" v-model="filterIntercurrence" class="rounded text-medical-600"><span class="text-xs font-bold text-red-600" title="Apenas com intercorrências"><i class="fas fa-exclamation-triangle"></i></span></label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer bg-gray-50 px-3 py-2 rounded border border-gray-200 hover:bg-gray-100 select-none"><input type="checkbox" v-model="filterNoPrescription" class="rounded text-purple-600"><span class="text-xs font-bold text-purple-600" title="Apenas sem receita"><i class="fas fa-file-prescription"></i></span></label>
+                            
+                            <select v-model="sortBy" class="text-sm border-gray-300 border rounded-md p-2 bg-gray-50 outline-none w-32 md:w-auto">
                                 <option value="nameAsc">Nome (A-Z)</option>
                                 <option value="nameDesc">Nome (Z-A)</option>
                                 <option value="visitAsc">Última Visita (Antiga)</option>
@@ -241,21 +255,26 @@
                                 <option value="dateDesc">Alta Prev. (Distante)</option>
                             </select>
                             <div class="flex border border-gray-300 rounded-md overflow-hidden"><button @click="viewMode = 'grid'" :class="['px-3 py-2 text-sm', viewMode === 'grid' ? 'bg-medical-100 text-medical-700' : 'bg-white text-gray-500']"><i class="fas fa-th-large"></i></button><button @click="viewMode = 'list'" :class="['px-3 py-2 text-sm', viewMode === 'list' ? 'bg-medical-100 text-medical-700' : 'bg-white text-gray-500']"><i class="fas fa-list"></i></button></div>
-                            <button @click="printList" class="text-gray-600 hover:text-medical-700 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm flex items-center"><i class="fas fa-print mr-2"></i> Imprimir</button>
+                            <button @click="printList" class="text-gray-600 hover:text-medical-700 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm flex items-center" title="Imprimir Lista"><i class="fas fa-print"></i></button>
                         </div>
                     </div>
 
                     <div v-if="filteredPatients.length === 0" class="text-center py-20 bg-white rounded-lg shadow-sm border border-gray-200 border-dashed"><i class="fas fa-folder-open text-gray-300 text-5xl mb-4"></i><p class="text-gray-500">Nenhum paciente encontrado.</p></div>
 
-                    <!-- GRID/LIST VIEW Content (Mesmo código anterior) -->
+                    <!-- GRID/LIST VIEW Content -->
                     <div v-if="viewMode === 'grid' && filteredPatients.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <!-- Cards (Grid) -->
                         <div v-for="patient in filteredPatients" :key="patient.id" @click="openPatientDetails(patient)" class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md cursor-pointer transition-all flex flex-col relative group">
                             <!-- Badges -->
-                            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 z-30 flex flex-col items-center gap-1 w-full">
+                            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 z-30 flex flex-col items-center gap-1 w-full pointer-events-none">
                                 <div v-if="patient.hasActiveIntercurrence" class="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md animate-pulse whitespace-nowrap"><i class="fas fa-exclamation-triangle"></i> INTERCORRÊNCIA</div>
                                 <div v-else-if="isVisitOverdue(patient.lastVisit)" class="bg-orange-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md whitespace-nowrap"><i class="fas fa-user-clock mr-1"></i> VISITA ATRASADA</div>
+                                
+                                <!-- NOVOS BADGES DE ALTA -->
+                                <div v-if="isDischargeOverdue(patient.carePlan?.estimatedDate) && patient.status === 'active'" class="bg-red-700 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md whitespace-nowrap border border-red-500"><i class="fas fa-calendar-times mr-1"></i> ALTA VENCIDA</div>
+                                <div v-else-if="isDischargeThisWeek(patient.carePlan?.estimatedDate) && patient.status === 'active'" class="bg-yellow-400 text-yellow-900 text-[10px] font-bold px-3 py-1 rounded-full shadow-md whitespace-nowrap border border-yellow-300"><i class="fas fa-calendar-week mr-1"></i> ALTA NA SEMANA</div>
                             </div>
+                            
                             <!-- Card Header -->
                             <div class="p-5 border-b border-gray-100 flex justify-between items-start">
                                 <div class="flex items-center gap-3">
@@ -287,7 +306,16 @@
                                     </ul>
                                 </div>
                                 <div class="flex justify-between items-end border-t border-dashed pt-2 mt-2">
-                                    <div v-if="patient.carePlan && patient.carePlan.estimatedDate" class="text-sm"><span class="text-medical-600 text-xs font-bold uppercase tracking-wider block">Prev. Alta</span><span class="text-gray-800 font-bold bg-blue-50 px-2 py-0.5 rounded text-xs border border-blue-100">{{ formatDate(patient.carePlan.estimatedDate) }}</span></div>
+                                    <div class="text-sm flex flex-col gap-2">
+                                        <div>
+                                            <span class="text-gray-400 text-[10px] uppercase tracking-wider block">Internação</span>
+                                            <span class="text-gray-700 font-bold text-xs">{{ formatDate(patient.admissionDate) }}</span>
+                                        </div>
+                                        <div v-if="patient.carePlan && patient.carePlan.estimatedDate">
+                                            <span class="text-medical-600 text-[10px] font-bold uppercase tracking-wider block">Prev. Alta</span>
+                                            <span :class="['font-bold px-2 py-0.5 rounded text-xs border', isDischargeOverdue(patient.carePlan.estimatedDate) ? 'bg-red-50 text-red-700 border-red-200' : 'bg-blue-50 text-gray-800 border-blue-100']">{{ formatDate(patient.carePlan.estimatedDate) }}</span>
+                                        </div>
+                                    </div>
                                     <div class="text-right text-xs">
                                         <span class="text-gray-400 block uppercase tracking-wider text-[10px]">Última Visita</span>
                                         <span :class="['font-medium', isVisitOverdue(patient.lastVisit) ? 'text-orange-600 font-bold' : 'text-gray-600']">{{ formatDate(patient.lastVisit) || 'Nunca' }}</span>
@@ -310,14 +338,25 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Pendências</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Quadro Clínico</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prev. Alta / Última Visita</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Datas (Int. / Alta / Visita)</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <tr v-for="patient in filteredPatients" :key="patient.id" @click="openPatientDetails(patient)" class="hover:bg-gray-50 cursor-pointer transition-colors">
                                     <td class="px-6 py-4 whitespace-nowrap align-top"><div class="flex items-center"><div class="flex-shrink-0 h-8 w-8 rounded-full bg-medical-100 flex items-center justify-center text-medical-600 font-bold text-xs">{{ getInitials(patient.name) }}</div><div class="ml-4"><div class="text-sm font-medium text-gray-900">{{ patient.name }} <i v-if="patient.prescriptionDone" class="fas fa-file-prescription text-purple-600 ml-1" title="Receita OK"></i></div><div class="text-xs text-gray-500">Pront: {{ patient.recordNumber }}</div></div></div></td>
-                                    <td class="px-6 py-4 whitespace-nowrap align-top"><span v-if="patient.hasActiveIntercurrence" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Intercorrência</span><span v-else-if="isVisitOverdue(patient.lastVisit)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">Visita Atrasada</span><span v-else class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Estável</span></td>
+                                    <td class="px-6 py-4 whitespace-nowrap align-top">
+                                        <div class="flex flex-col gap-1 items-start">
+                                            <span v-if="patient.hasActiveIntercurrence" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Intercorrência</span>
+                                            <span v-else-if="isVisitOverdue(patient.lastVisit)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">Visita Atrasada</span>
+                                            
+                                            <!-- NOVOS BADGES LISTA -->
+                                            <span v-if="isDischargeOverdue(patient.carePlan?.estimatedDate) && patient.status === 'active'" class="px-2 inline-flex text-xs leading-5 font-bold rounded-full bg-red-600 text-white border border-red-700">Alta Vencida</span>
+                                            <span v-if="isDischargeThisWeek(patient.carePlan?.estimatedDate) && patient.status === 'active'" class="px-2 inline-flex text-xs leading-5 font-bold rounded-full bg-yellow-400 text-yellow-900 border border-yellow-300">Alta na Semana</span>
+                                            
+                                            <span v-if="!patient.hasActiveIntercurrence && !isVisitOverdue(patient.lastVisit) && !isDischargeOverdue(patient.carePlan?.estimatedDate) && !isDischargeThisWeek(patient.carePlan?.estimatedDate)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Estável</span>
+                                        </div>
+                                    </td>
                                     <td class="px-6 py-4 text-sm text-gray-500 hidden md:table-cell align-top hover:bg-gray-100 cursor-pointer" @click.stop="openPatientDetails(patient, 'pendencies')">
                                         <ul v-if="patient.pendingPreview && patient.pendingPreview.length" class="space-y-1.5">
                                             <li v-for="task in patient.pendingPreview" :key="task.description" class="flex items-start gap-1.5">
@@ -330,7 +369,12 @@
                                     <td class="px-6 py-4 text-sm text-gray-500 hidden md:table-cell align-top whitespace-pre-wrap leading-relaxed min-w-[300px]">{{ patient.admissionNote }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium align-top">
                                         <div class="flex flex-col gap-1">
-                                            <div class="text-xs"><span class="text-gray-400">Alta:</span> {{ formatDate(patient.carePlan?.estimatedDate) || '-' }}</div>
+                                            <div class="text-xs"><span class="text-gray-400">Int:</span> <strong>{{ formatDate(patient.admissionDate) }}</strong></div>
+                                            
+                                            <div class="text-xs">
+                                                <span class="text-gray-400">Alta:</span> 
+                                                <span :class="isDischargeOverdue(patient.carePlan?.estimatedDate) ? 'text-red-600 font-bold' : (isDischargeThisWeek(patient.carePlan?.estimatedDate) ? 'text-yellow-600 font-bold' : '')">{{ formatDate(patient.carePlan?.estimatedDate) || '-' }}</span>
+                                            </div>
                                             <div class="text-xs"><span class="text-gray-400">Visita:</span> <span :class="isVisitOverdue(patient.lastVisit) ? 'text-orange-600 font-bold' : ''">{{ formatDate(patient.lastVisit) || '-' }}</span></div>
                                         </div>
                                     </td>
@@ -436,6 +480,11 @@
                 const sortBy = ref('nameAsc'); 
                 const filterIntercurrence = ref(false);
                 const filterNoPrescription = ref(false); 
+                
+                // NOVOS FILTROS
+                const filterDischargeWeek = ref(false);
+                const filterDischargeOverdue = ref(false);
+
                 const windowWidth = ref(window.innerWidth);
                 const isNotePanelOpen = ref(true); 
                 const isSidebarCollapsed = ref(false);
@@ -479,6 +528,42 @@
                     });
                 });
 
+                // --- LÓGICA DE DATAS E FILTROS DE ALTA ---
+                
+                const getTodayDate = () => {
+                    const d = new Date();
+                    d.setHours(0,0,0,0);
+                    return d;
+                };
+
+                const getEndOfWeek = () => {
+                    const today = getTodayDate();
+                    const day = today.getDay(); // 0-6 (Sun-Sat)
+                    const diff = 7 - day; // Dias até o próximo Domingo (considerando Domingo como fim ou segunda como inicio, vamos padronizar fim no Sabado/Domingo)
+                    // Vamos considerar "Esta semana" até o próximo Domingo.
+                    const end = new Date(today);
+                    end.setDate(today.getDate() + (day === 0 ? 0 : (7 - day))); // Se for domingo, é hoje. Se não, prox domingo.
+                    end.setHours(23,59,59,999);
+                    return end;
+                };
+
+                const isDischargeOverdue = (dateStr) => {
+                    if (!dateStr) return false;
+                    const date = new Date(dateStr + 'T12:00:00'); 
+                    const today = getTodayDate();
+                    return date < today;
+                };
+
+                const isDischargeThisWeek = (dateStr) => {
+                    if (!dateStr) return false;
+                    const date = new Date(dateStr + 'T12:00:00');
+                    const today = getTodayDate();
+                    const endOfWeek = getEndOfWeek();
+                    // Esta semana inclui hoje até o fim da semana
+                    return date >= today && date <= endOfWeek;
+                };
+
+
                 // --- LÓGICA DE AUTENTICAÇÃO SEGURA ---
                 onAuthStateChanged(auth, async (user) => {
                     if (user) { 
@@ -487,12 +572,10 @@
                         isCheckingAuth.value = true;
 
                         try {
-                            // 1. Verifica se está na lista de emergência
                             if (EMERGENCY_ADMINS.includes(user.email)) {
                                 console.log("Admin de emergência detectado.");
                                 isAuthorized.value = true;
                             } else {
-                                // 2. Verifica coleção authorized_users no Firestore
                                 const userDocRef = doc(db, 'authorized_users', user.email);
                                 const userDocSnap = await getDoc(userDocRef);
                                 if (userDocSnap.exists()) {
@@ -510,7 +593,6 @@
 
                         } catch (error) {
                             console.error("Erro ao verificar autorização:", error);
-                            // Fallback seguro: nega acesso se der erro
                             isAuthorized.value = false; 
                         } finally {
                             isCheckingAuth.value = false;
@@ -531,7 +613,6 @@
                     try { 
                         const provider = new GoogleAuthProvider();
                         await signInWithPopup(auth, provider); 
-                        // A verificação de autorização acontece no onAuthStateChanged
                     } catch (error) { 
                         console.error(error);
                         showNotification('Erro ao entrar com Google.', 'error'); 
@@ -737,6 +818,19 @@
                     if (filterIntercurrence.value) { list = list.filter(p => p.hasActiveIntercurrence); }
                     if (filterNoPrescription.value) { list = list.filter(p => !p.prescriptionDone); }
 
+                    // NOVOS FILTROS DE ALTA
+                    if (filterDischargeWeek.value || filterDischargeOverdue.value) {
+                        list = list.filter(p => {
+                            const isOverdue = isDischargeOverdue(p.carePlan?.estimatedDate);
+                            const isWeek = isDischargeThisWeek(p.carePlan?.estimatedDate);
+                            
+                            if (filterDischargeOverdue.value && filterDischargeWeek.value) return isOverdue || isWeek;
+                            if (filterDischargeOverdue.value) return isOverdue;
+                            if (filterDischargeWeek.value) return isWeek;
+                            return true;
+                        });
+                    }
+
                     return list.sort((a, b) => {
                         const nameA = a.name || '';
                         const nameB = b.name || '';
@@ -782,6 +876,8 @@
                     viewMode, sortBy, filterIntercurrence, filterNoPrescription, printList, togglePrescription, saveCarePlan,
                     showConfirmDialog, confirmMessage, confirmAction, cancelConfirm, executeConfirm, checkRecordNumber,
                     sortedPendencies, togglePendency, isSidebarCollapsed,
+                    // Novos Exports
+                    filterDischargeWeek, filterDischargeOverdue, isDischargeOverdue, isDischargeThisWeek,
                     // Security Exports
                     isAuthorized, isCheckingAuth
                 };
