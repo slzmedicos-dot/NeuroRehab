@@ -46,6 +46,12 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
         [v-cloak] { display: none; }
+        
+        /* Estilos para o Editor Rico */
+        .rich-editor-content { outline: none; min-height: 200px; }
+        .rich-editor-content b { font-weight: bold; }
+        .rich-editor-content i { font-style: italic; }
+        .rich-editor-content u { text-decoration: underline; }
 
         /* --- SISTEMA DE IMPRESSÃO (Mantido Original) --- */
         #print-section { display: none; }
@@ -417,13 +423,48 @@
                 </div>
                 <button @click="closePatientDetails" class="text-white hover:text-gray-200"><i class="fas fa-times text-xl"></i></button>
             </div>
-            <div class="bg-white border-b border-gray-200 px-6 flex items-end space-x-6 pt-2 overflow-x-auto"><button @click="activeTab = 'timeline'" :class="['pb-3 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap', activeTab === 'timeline' ? 'border-medical-600 text-medical-600' : 'border-transparent text-gray-500 hover:text-gray-700']"><i class="fas fa-history mr-2"></i> Evolução</button><button @click="activeTab = 'pendencies'" :class="['pb-3 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap', activeTab === 'pendencies' ? 'border-medical-600 text-medical-600' : 'border-transparent text-gray-500 hover:text-gray-700']"><i class="fas fa-tasks mr-2"></i> Pendências <span v-if="currentPendencies.length > 0" class="ml-1 bg-medical-warn-600 text-white text-[10px] px-1.5 rounded-full">{{ currentPendencies.filter(t => !t.done).length }}</span></button><button @click="activeTab = 'careplan'" :class="['pb-3 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap', activeTab === 'careplan' ? 'border-medical-600 text-medical-600' : 'border-transparent text-gray-500 hover:text-gray-700']"><i class="fas fa-clipboard-list mr-2"></i> Dados & Plano</button><button @click="activeTab = 'summary'" :class="['pb-3 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap', activeTab === 'summary' ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700']"><i class="fas fa-file-medical-alt mr-2"></i> Resumo Alta</button></div><div class="flex-grow overflow-hidden bg-gray-50 relative"><div v-if="activeTab === 'timeline'" class="absolute inset-0 flex flex-col md:flex-row overflow-hidden"><div class="flex-grow p-6 overflow-y-auto custom-scrollbar bg-gray-50 transition-all" :class="{'md:w-full': !isNotePanelOpen, 'md:w-2/3': isNotePanelOpen}"><div class="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-6 flex justify-between items-center shadow-sm"><div><p class="text-sm font-bold text-blue-900">Registro Diário</p><p class="text-xs text-blue-600">Última: {{ formatDate(selectedPatient.lastVisit) || '-' }}</p></div><button @click="confirmAction('visit', null)" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow transition-colors flex items-center"><i class="fas fa-check-circle mr-2"></i> Visita Hoje</button></div><div v-if="currentEvolutions.length > 0" class="space-y-6 pb-20 md:pb-0"><div v-for="evo in currentEvolutions" :key="evo.id" class="relative pl-6 border-l-2 ml-2" :class="evo.type === 'intercurrence' ? 'border-medical-alert-500' : 'border-gray-300'"><div :class="['absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white', evo.type === 'intercurrence' ? 'bg-medical-alert-600' : 'bg-medical-500']"></div><div :class="['p-4 rounded-lg shadow-sm border', evo.type === 'intercurrence' ? 'bg-medical-alert-50 border-medical-alert-100' : 'bg-white border-gray-100']"><div class="flex justify-between items-center mb-2"><div class="flex items-center gap-2"><span :class="['text-xs font-bold px-2 py-0.5 rounded', evo.type === 'intercurrence' ? 'bg-red-100 text-red-800' : 'bg-blue-50 text-blue-800']">{{ evo.type === 'intercurrence' ? 'INTERCORRÊNCIA' : 'Evolução' }}</span><span class="text-sm font-bold text-gray-700">{{ new Date(evo.date).toLocaleString('pt-BR') }}</span></div><span class="text-xs text-gray-400 border border-gray-200 px-2 py-1 rounded">{{ evo.author }}</span></div><p class="text-gray-600 text-sm whitespace-pre-line leading-relaxed">{{ evo.note }}</p><div v-if="evo.type === 'intercurrence'" class="mt-3 pt-3 border-t border-red-100 flex justify-end"><div v-if="evo.resolved" class="flex items-center text-green-600 text-xs font-bold bg-green-50 px-2 py-1 rounded border border-green-200"><i class="fas fa-check-square mr-1"></i> Resolvida</div><button v-else @click="resolveIntercurrence(evo)" class="flex items-center text-xs text-gray-600 bg-white border border-gray-300 hover:border-green-500 hover:text-green-600 px-3 py-1.5 rounded transition-all shadow-sm"><i class="far fa-square mr-2"></i> Resolver</button></div></div></div></div><div v-else class="text-center text-gray-500 py-10">Sem histórico.</div></div><div class="bg-white border-gray-200 shadow z-20 flex flex-col transition-all duration-300 ease-in-out" :class="[isNotePanelOpen ? 'h-[450px] md:h-full md:w-1/3' : 'h-14 md:h-full md:w-12', 'border-t md:border-t-0 md:border-l']"><div class="p-3 border-b border-gray-100 flex justify-between items-center cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors h-14 flex-shrink-0" @click="isNotePanelOpen = !isNotePanelOpen"><div v-if="!isNotePanelOpen && windowWidth >= 768" class="hidden md:flex h-full w-full items-center justify-center"><i class="fas fa-pen-fancy text-medical-600"></i></div><div v-else class="flex items-center gap-2 w-full justify-between"><h4 class="text-sm font-bold text-gray-800 uppercase tracking-wider text-medical-600 flex items-center"><i class="fas fa-pen-fancy mr-2"></i> <span v-if="isNotePanelOpen">Nova Nota</span></h4><i class="fas text-gray-400" :class="isNotePanelOpen ? 'fa-chevron-down md:fa-chevron-right' : 'fa-chevron-up md:fa-chevron-left'"></i></div></div><div v-show="isNotePanelOpen" class="flex-grow p-4 flex flex-col overflow-y-auto"><textarea v-model="newEvolutionText" class="w-full flex-grow p-3 border border-gray-300 rounded-md focus:ring-medical-500 resize-none text-sm bg-gray-50 mb-4" placeholder="Descreva o estado do paciente..."></textarea><div class="flex items-center gap-2 mb-4"><input type="checkbox" id="isIntercurrence" v-model="isIntercurrence" class="h-4 w-4 text-red-600 rounded cursor-pointer"><label for="isIntercurrence" class="text-sm text-gray-700 font-medium cursor-pointer">Registrar como Intercorrência</label></div><button @click="addEvolution" :disabled="!newEvolutionText.trim()" :class="['w-full py-2 text-white rounded-md transition-colors font-medium shadow-sm', isIntercurrence ? 'bg-red-600 hover:bg-red-700' : 'bg-medical-600 hover:bg-medical-700']">Salvar Nota</button></div></div></div>
+            <div class="bg-white border-b border-gray-200 px-6 flex items-end space-x-6 pt-2 overflow-x-auto"><button @click="activeTab = 'timeline'" :class="['pb-3 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap', activeTab === 'timeline' ? 'border-medical-600 text-medical-600' : 'border-transparent text-gray-500 hover:text-gray-700']"><i class="fas fa-history mr-2"></i> Evolução</button><button @click="activeTab = 'pendencies'" :class="['pb-3 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap', activeTab === 'pendencies' ? 'border-medical-600 text-medical-600' : 'border-transparent text-gray-500 hover:text-gray-700']"><i class="fas fa-tasks mr-2"></i> Pendências <span v-if="currentPendencies.length > 0" class="ml-1 bg-medical-warn-600 text-white text-[10px] px-1.5 rounded-full">{{ currentPendencies.filter(t => !t.done).length }}</span></button><button @click="activeTab = 'careplan'" :class="['pb-3 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap', activeTab === 'careplan' ? 'border-medical-600 text-medical-600' : 'border-transparent text-gray-500 hover:text-gray-700']"><i class="fas fa-clipboard-list mr-2"></i> Dados & Plano</button><button @click="activeTab = 'summary'" :class="['pb-3 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap', activeTab === 'summary' ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700']"><i class="fas fa-file-medical-alt mr-2"></i> Resumo Alta</button></div><div class="flex-grow overflow-hidden bg-gray-50 relative">
+                
+                <!-- EVOLUÇÃO (COM EDIÇÃO) -->
+                <div v-if="activeTab === 'timeline'" class="absolute inset-0 flex flex-col md:flex-row overflow-hidden"><div class="flex-grow p-6 overflow-y-auto custom-scrollbar bg-gray-50 transition-all" :class="{'md:w-full': !isNotePanelOpen, 'md:w-2/3': isNotePanelOpen}"><div class="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-6 flex justify-between items-center shadow-sm"><div><p class="text-sm font-bold text-blue-900">Registro Diário</p><p class="text-xs text-blue-600">Última: {{ formatDate(selectedPatient.lastVisit) || '-' }}</p></div><button @click="confirmAction('visit', null)" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow transition-colors flex items-center"><i class="fas fa-check-circle mr-2"></i> Visita Hoje</button></div><div v-if="currentEvolutions.length > 0" class="space-y-6 pb-20 md:pb-0">
+                    <div v-for="evo in currentEvolutions" :key="evo.id" class="relative pl-6 border-l-2 ml-2" :class="evo.type === 'intercurrence' ? 'border-medical-alert-500' : 'border-gray-300'">
+                        <div :class="['absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white', evo.type === 'intercurrence' ? 'bg-medical-alert-600' : 'bg-medical-500']"></div>
+                        <div :class="['p-4 rounded-lg shadow-sm border relative group', evo.type === 'intercurrence' ? 'bg-medical-alert-50 border-medical-alert-100' : 'bg-white border-gray-100']">
+                            
+                            <!-- BOTOES DE EDIÇÃO/EXCLUSÃO (APENAS PARA O AUTOR) -->
+                            <div v-if="evo.author === currentUser?.email && editingEvoId !== evo.id" class="absolute right-2 top-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button @click="startEditEvolution(evo)" class="text-xs text-blue-600 hover:text-blue-800 bg-white p-1 rounded border shadow-sm" title="Editar"><i class="fas fa-edit"></i></button>
+                                <button @click="confirmDeleteEvolution(evo)" class="text-xs text-red-600 hover:text-red-800 bg-white p-1 rounded border shadow-sm" title="Excluir"><i class="fas fa-trash"></i></button>
+                            </div>
+
+                            <div class="flex justify-between items-center mb-2"><div class="flex items-center gap-2"><span :class="['text-xs font-bold px-2 py-0.5 rounded', evo.type === 'intercurrence' ? 'bg-red-100 text-red-800' : 'bg-blue-50 text-blue-800']">{{ evo.type === 'intercurrence' ? 'INTERCORRÊNCIA' : 'Evolução' }}</span><span class="text-sm font-bold text-gray-700">{{ new Date(evo.date).toLocaleString('pt-BR') }}</span></div><span class="text-xs text-gray-400 border border-gray-200 px-2 py-1 rounded">{{ evo.author }}</span></div>
+                            
+                            <!-- MODO EDIÇÃO EVOLUÇÃO -->
+                            <div v-if="editingEvoId === evo.id">
+                                <textarea v-model="editingEvoText" rows="3" class="w-full text-sm border-blue-300 rounded p-2 focus:ring-2 focus:ring-blue-500"></textarea>
+                                <div class="flex justify-end gap-2 mt-2">
+                                    <button @click="cancelEditEvolution" class="text-xs px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-gray-700">Cancelar</button>
+                                    <button @click="saveEvolutionEdit(evo)" class="text-xs px-3 py-1 bg-blue-600 rounded hover:bg-blue-700 text-white">Salvar</button>
+                                </div>
+                            </div>
+                            
+                            <p v-else class="text-gray-600 text-sm whitespace-pre-line leading-relaxed">{{ evo.note }}</p>
+                            
+                            <div v-if="evo.type === 'intercurrence'" class="mt-3 pt-3 border-t border-red-100 flex justify-end"><div v-if="evo.resolved" class="flex items-center text-green-600 text-xs font-bold bg-green-50 px-2 py-1 rounded border border-green-200"><i class="fas fa-check-square mr-1"></i> Resolvida</div><button v-else @click="resolveIntercurrence(evo)" class="flex items-center text-xs text-gray-600 bg-white border border-gray-300 hover:border-green-500 hover:text-green-600 px-3 py-1.5 rounded transition-all shadow-sm"><i class="far fa-square mr-2"></i> Resolver</button></div>
+                        </div>
+                    </div>
+                </div><div v-else class="text-center text-gray-500 py-10">Sem histórico.</div></div><div class="bg-white border-gray-200 shadow z-20 flex flex-col transition-all duration-300 ease-in-out" :class="[isNotePanelOpen ? 'h-[450px] md:h-full md:w-1/3' : 'h-14 md:h-full md:w-12', 'border-t md:border-t-0 md:border-l']"><div class="p-3 border-b border-gray-100 flex justify-between items-center cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors h-14 flex-shrink-0" @click="isNotePanelOpen = !isNotePanelOpen"><div v-if="!isNotePanelOpen && windowWidth >= 768" class="hidden md:flex h-full w-full items-center justify-center"><i class="fas fa-pen-fancy text-medical-600"></i></div><div v-else class="flex items-center gap-2 w-full justify-between"><h4 class="text-sm font-bold text-gray-800 uppercase tracking-wider text-medical-600 flex items-center"><i class="fas fa-pen-fancy mr-2"></i> <span v-if="isNotePanelOpen">Nova Nota</span></h4><i class="fas text-gray-400" :class="isNotePanelOpen ? 'fa-chevron-down md:fa-chevron-right' : 'fa-chevron-up md:fa-chevron-left'"></i></div></div><div v-show="isNotePanelOpen" class="flex-grow p-4 flex flex-col overflow-y-auto"><textarea v-model="newEvolutionText" class="w-full flex-grow p-3 border border-gray-300 rounded-md focus:ring-medical-500 resize-none text-sm bg-gray-50 mb-4" placeholder="Descreva o estado do paciente..."></textarea><div class="flex items-center gap-2 mb-4"><input type="checkbox" id="isIntercurrence" v-model="isIntercurrence" class="h-4 w-4 text-red-600 rounded cursor-pointer"><label for="isIntercurrence" class="text-sm text-gray-700 font-medium cursor-pointer">Registrar como Intercorrência</label></div><button @click="addEvolution" :disabled="!newEvolutionText.trim()" :class="['w-full py-2 text-white rounded-md transition-colors font-medium shadow-sm', isIntercurrence ? 'bg-red-600 hover:bg-red-700' : 'bg-medical-600 hover:bg-medical-700']">Salvar Nota</button></div></div></div>
             
-            <!-- PENDÊNCIAS COM EDIÇÃO -->
+            <!-- PENDÊNCIAS COM EDIÇÃO DE CATEGORIA -->
             <div v-if="activeTab === 'pendencies'" class="absolute inset-0 p-6 overflow-y-auto"><div class="grid grid-cols-1 md:grid-cols-2 gap-8 h-full"><div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col"><h4 class="font-bold text-gray-800 mb-4 flex items-center justify-between"><span><i class="fas fa-list-ul text-medical-600 mr-2"></i> Pendências</span><span class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">{{ currentPendencies.filter(t => !t.done).length }}</span></h4><div class="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-grow"><div v-for="task in sortedPendencies" :key="task.id" :class="['p-3 rounded border flex items-start gap-3', task.done ? 'bg-gray-50 opacity-75' : 'bg-white hover:border-medical-300']">
                 
-                <!-- MODO EDIÇÃO -->
+                <!-- MODO EDIÇÃO PENDENCIA -->
                 <div v-if="editingPendencyId === task.id" class="flex-grow flex flex-col gap-2">
+                    <select v-model="editingPendencyCategory" class="w-full p-2 border border-blue-300 rounded text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="Clínica Médica">Clínica Médica</option>
+                        <option value="Neurologia">Neurologia</option>
+                        <option value="Qualquer médico">Qualquer médico</option>
+                    </select>
                     <textarea v-model="editingPendencyText" rows="2" class="w-full p-2 border border-blue-300 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
                     <div class="flex gap-2 justify-end">
                         <button @click="cancelPendencyEdit" class="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50">Cancelar</button>
@@ -446,21 +487,49 @@
             
             <div v-if="activeTab === 'careplan'" class="absolute inset-0 p-6 overflow-y-auto"><div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"><div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center"><h4 class="font-bold text-gray-800"><i class="fas fa-bullseye text-medical-600 mr-2"></i> Programação & Dados Clínicos</h4><button @click="saveCarePlan" class="text-sm text-medical-600 hover:text-medical-800 font-medium bg-medical-50 px-3 py-1 rounded border border-medical-200 shadow-sm">Salvar Alterações</button></div><div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6"><div class="col-span-1 md:col-span-2 bg-blue-50 p-4 rounded border border-blue-100"><h5 class="text-xs font-bold text-blue-800 uppercase tracking-wider mb-3">Dados Cadastrais (Editável)</h5><div class="grid grid-cols-3 gap-4"><div><label class="block text-xs font-medium text-blue-700 mb-1">Idade</label><input type="number" v-model="selectedPatient.age" class="w-full border-blue-200 rounded text-sm p-1.5 focus:ring-blue-500"></div><div><label class="block text-xs font-medium text-blue-700 mb-1">Cidade/UF</label><input type="text" v-model="selectedPatient.cityState" class="w-full border-blue-200 rounded text-sm p-1.5 focus:ring-blue-500"></div><div><label class="block text-xs font-medium text-blue-700 mb-1">Profissão / Escolaridade</label><input type="text" v-model="selectedPatient.profession" class="w-full border-blue-200 rounded text-sm p-1.5 focus:ring-blue-500" placeholder="Ex: Advogado"></div></div></div><div class="col-span-1 md:col-span-2"><label class="block text-sm font-bold text-gray-800 mb-2 border-l-4 border-medical-500 pl-2">Quadro Clínico e Comorbidades</label><textarea v-model="selectedPatient.admissionNote" rows="4" class="w-full border-gray-300 rounded-md text-sm bg-yellow-50 focus:bg-white focus:ring-2 focus:ring-medical-500 transition-colors p-3 shadow-inner"></textarea></div><div class="col-span-1 md:col-span-2 border-t border-gray-100 my-2"></div><div class="col-span-1 md:col-span-2"><label class="block text-sm font-bold text-gray-700 mb-2">Metas Terapêuticas & Planejamento Global</label><textarea v-model="selectedPatient.carePlan.goals" rows="6" class="w-full border-gray-300 rounded-md p-3 text-sm focus:ring-medical-500 focus:border-medical-500" placeholder="Descreva as metas de reabilitação, objetivos da equipe multi e planejamento..."></textarea></div></div></div></div>
             
-            <div v-if="activeTab === 'summary'" class="absolute inset-0 flex flex-col p-6"><div class="bg-white flex-grow flex flex-col rounded-lg shadow-sm border border-gray-200 overflow-hidden"><div class="bg-gray-50 px-6 py-3 border-b border-gray-200 flex justify-between items-center"><div><h4 class="font-bold text-gray-800">Relatório de Alta</h4><p class="text-xs text-gray-500">Resumo de Evolução</p></div><div class="flex gap-3 items-center">
-                
-                <!-- BOTÃO CARREGAR MODELO (Se vazio) -->
-                <button v-if="!selectedPatient.dischargeSummary" @click="selectedPatient.dischargeSummary = EVOLUTION_TEMPLATE" class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-gray-700 mr-2"><i class="fas fa-file-invoice mr-1"></i> Carregar Modelo</button>
+            <!-- RESUMO DE ALTA COM EDITOR RICO -->
+            <div v-if="activeTab === 'summary'" class="absolute inset-0 flex flex-col p-6">
+                <div class="bg-white flex-grow flex flex-col rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="bg-gray-50 px-6 py-3 border-b border-gray-200 flex justify-between items-center">
+                        <div><h4 class="font-bold text-gray-800">Relatório de Alta</h4><p class="text-xs text-gray-500">Resumo de Evolução</p></div>
+                        <div class="flex gap-3 items-center">
+                            
+                            <!-- BOTÃO CARREGAR MODELO (Se vazio) -->
+                            <button v-if="!selectedPatient.dischargeSummary" @click="selectedPatient.dischargeSummary = EVOLUTION_TEMPLATE; updateEditorContent();" class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-gray-700 mr-2"><i class="fas fa-file-invoice mr-1"></i> Carregar Modelo</button>
 
-                <!-- CHECKBOX RESUMO EVOLUÇÃO CONCLUÍDO -->
-                <div class="flex items-center bg-blue-50 px-3 py-1.5 rounded border border-blue-100 mr-2">
-                    <input type="checkbox" :checked="selectedPatient.evolutionSummaryDone" @change="toggleEvolutionSummary" class="h-4 w-4 text-blue-600 rounded cursor-pointer mr-2">
-                    <div class="text-xs">
-                        <span class="block font-bold text-blue-800">Resumo OK</span>
-                        <span v-if="selectedPatient.evolutionSummaryDate" class="block text-[10px] text-blue-600">{{ formatDate(selectedPatient.evolutionSummaryDate) }}</span>
+                            <!-- CHECKBOX RESUMO EVOLUÇÃO CONCLUÍDO -->
+                            <div class="flex items-center bg-blue-50 px-3 py-1.5 rounded border border-blue-100 mr-2">
+                                <input type="checkbox" :checked="selectedPatient.evolutionSummaryDone" @change="toggleEvolutionSummary" class="h-4 w-4 text-blue-600 rounded cursor-pointer mr-2">
+                                <div class="text-xs">
+                                    <span class="block font-bold text-blue-800">Resumo OK</span>
+                                    <span v-if="selectedPatient.evolutionSummaryDate" class="block text-[10px] text-blue-600">{{ formatDate(selectedPatient.evolutionSummaryDate) }}</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center bg-purple-50 px-3 py-1.5 rounded border border-purple-100"><input type="checkbox" :checked="selectedPatient.prescriptionDone" @change="togglePrescription" class="h-4 w-4 text-purple-600 rounded cursor-pointer mr-2"><div class="text-xs"><span class="block font-bold text-purple-800">Receita Feita</span><span v-if="selectedPatient.prescriptionDate" class="block text-[10px] text-purple-600">{{ formatDate(selectedPatient.prescriptionDate) }}</span></div></div><button @click="copySummary" class="bg-white text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded-md text-sm border border-gray-300">Copiar</button><button @click="savePatients(selectedPatient); showNotification('Salvo!', 'success')" class="bg-medical-600 text-white hover:bg-medical-700 px-3 py-1.5 rounded-md text-sm">Salvar</button>
+                        </div>
+                    </div>
+                    
+                    <!-- EDITOR RICO -->
+                    <div class="flex flex-col h-full overflow-hidden">
+                        <div class="flex gap-2 p-2 bg-gray-100 border-b border-gray-200 items-center">
+                            <button @click="formatDoc('bold')" class="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded text-gray-700 font-bold" title="Negrito"><i class="fas fa-bold"></i></button>
+                            <button @click="formatDoc('italic')" class="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded text-gray-700 italic" title="Itálico"><i class="fas fa-italic"></i></button>
+                            <button @click="formatDoc('underline')" class="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded text-gray-700 underline" title="Sublinhado"><i class="fas fa-underline"></i></button>
+                            <div class="h-5 w-px bg-gray-300 mx-2"></div>
+                            <button @click="formatDoc('foreColor', '#000000')" class="w-6 h-6 rounded-full bg-black border border-gray-300 hover:scale-110 transition-transform" title="Preto"></button>
+                            <button @click="formatDoc('foreColor', '#ef4444')" class="w-6 h-6 rounded-full bg-red-500 border border-gray-300 hover:scale-110 transition-transform" title="Vermelho"></button>
+                            <button @click="formatDoc('foreColor', '#2563eb')" class="w-6 h-6 rounded-full bg-blue-600 border border-gray-300 hover:scale-110 transition-transform" title="Azul"></button>
+                        </div>
+                        <div id="rich-editor" contenteditable="true" 
+                             class="flex-grow p-6 outline-none overflow-y-auto text-base leading-relaxed rich-editor-content bg-white"
+                             @input="updateSummaryContent">
+                        </div>
                     </div>
                 </div>
-
-                <div class="flex items-center bg-purple-50 px-3 py-1.5 rounded border border-purple-100"><input type="checkbox" :checked="selectedPatient.prescriptionDone" @change="togglePrescription" class="h-4 w-4 text-purple-600 rounded cursor-pointer mr-2"><div class="text-xs"><span class="block font-bold text-purple-800">Receita Feita</span><span v-if="selectedPatient.prescriptionDate" class="block text-[10px] text-purple-600">{{ formatDate(selectedPatient.prescriptionDate) }}</span></div></div><button @click="copySummary" class="bg-white text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded-md text-sm border border-gray-300">Copiar</button><button @click="savePatients(selectedPatient); showNotification('Salvo!', 'success')" class="bg-medical-600 text-white hover:bg-medical-700 px-3 py-1.5 rounded-md text-sm">Salvar</button></div></div><div class="flex-grow p-0"><textarea v-model="selectedPatient.dischargeSummary" class="w-full h-full p-6 resize-none focus:outline-none text-gray-700 text-base leading-relaxed" placeholder="Resumo do caso..."></textarea></div></div></div></div></div></div></div>
+            </div>
+            
+            </div></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -493,28 +562,9 @@
             try { await addDoc(collection(db, 'access_logs'), { timestamp: new Date().toISOString(), user: auth.currentUser.email, patientId: pid, patientName: pname, action: 'VIEW' }); } catch(e) { console.error("Log error", e); }
         };
 
-        const { createApp, ref, computed, onMounted } = Vue;
+        const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
 
-        const EVOLUTION_TEMPLATE = `ENFERMARIA DE REABILITAÇÃO NEUROLÓGICA - RESUMO DE EVOLUÇÃO
-
-IDENTIFICAÇÃO
-
-RESUMO/ CONTEXTO
-
-Paciente  de  xx anos, com sequelas de  ocorrido em  
-Apresenta como sequelas
-
-COMORBIDADES (atualizar lista, incluir alergias)
-Ex: HAS, DM, DRC…
-Alergias/ intolerância medicamentosa: 
-
-MEDICAMENTOS EM USO (atualizar lista de medicamentos conforme a alta)
-
-
-INTERCORRÊNCIAS: (período de internação, demandas prévias, resumo atividades realizadas)
-
-
-PENDÊNCIAS E PROPOSTAS: (exames pendentes, incluindo externos; ajustes medicamentosos; incluir aqui informações sobre diagnósticos não concluídos)`;
+        const EVOLUTION_TEMPLATE = `ENFERMARIA DE REABILITAÇÃO NEUROLÓGICA - RESUMO DE EVOLUÇÃO<br><br><b>IDENTIFICAÇÃO</b><br><br><b>RESUMO/ CONTEXTO</b><br>Paciente  de  xx anos, com sequelas de  ocorrido em...<br>Apresenta como sequelas...<br><br><b>COMORBIDADES</b> (atualizar lista, incluir alergias)<br>Ex: HAS, DM, DRC…<br>Alergias/ intolerância medicamentosa: <br><br><b>MEDICAMENTOS EM USO</b> (atualizar lista de medicamentos conforme a alta)<br><br><br><b>INTERCORRÊNCIAS:</b> (período de internação, demandas prévias, resumo atividades realizadas)<br><br><br><b>PENDÊNCIAS E PROPOSTAS:</b> (exames pendentes, incluindo externos; ajustes medicamentosos; incluir aqui informações sobre diagnósticos não concluídos)`;
 
         createApp({
             setup() {
@@ -558,6 +608,11 @@ PENDÊNCIAS E PROPOSTAS: (exames pendentes, incluindo externos; ajustes medicame
                 // Variáveis para Edição de Pendência
                 const editingPendencyId = ref(null);
                 const editingPendencyText = ref('');
+                const editingPendencyCategory = ref('Clínica Médica');
+
+                // Variáveis para Edição de Evolução
+                const editingEvoId = ref(null);
+                const editingEvoText = ref('');
 
                 const INACTIVITY_LIMIT = 4 * 60 * 60 * 1000; 
                 const lastActivity = ref(Date.now());
@@ -587,6 +642,30 @@ PENDÊNCIAS E PROPOSTAS: (exames pendentes, incluindo externos; ajustes medicame
                 const newPendency = ref({ category: 'Clínica Médica', description: '' });
 
                 const selectedPatient = computed(() => patients.value.find(p => p.id === selectedPatientId.value) || null);
+
+                // --- EDITOR RICO LOGIC ---
+                const formatDoc = (cmd, value = null) => {
+                    if (value) document.execCommand(cmd, false, value);
+                    else document.execCommand(cmd);
+                };
+
+                const updateSummaryContent = (e) => {
+                    if (selectedPatient.value) selectedPatient.value.dischargeSummary = e.target.innerHTML;
+                };
+
+                const updateEditorContent = () => {
+                    nextTick(() => {
+                        const editor = document.getElementById('rich-editor');
+                        if (editor && selectedPatient.value) {
+                            editor.innerHTML = selectedPatient.value.dischargeSummary || '';
+                        }
+                    });
+                };
+
+                watch(activeTab, (newTab) => {
+                    if (newTab === 'summary') updateEditorContent();
+                });
+                // -------------------------
 
                 const sortedPendencies = computed(() => {
                     if (!currentPendencies.value) return [];
@@ -709,15 +788,18 @@ PENDÊNCIAS E PROPOSTAS: (exames pendentes, incluindo externos; ajustes medicame
                     activeTab.value = tab; 
                     originalAdmissionNote.value = p.admissionNote; 
                     editingPendencyId.value = null; // Reset editing state
+                    editingEvoId.value = null;
                     logAccess(p.id, p.name);
                     if (windowWidth.value < 768) { isNotePanelOpen.value = false; } else { isNotePanelOpen.value = true; }
                     if(unsubscribeEvolutions) unsubscribeEvolutions();
                     if(unsubscribePendencies) unsubscribePendencies();
                     unsubscribeEvolutions = onSnapshot(query(collection(db, 'patients', p.id, 'evolutions'), orderBy('date', 'desc')), (snap) => { currentEvolutions.value = snap.docs.map(d => ({ id: d.id, ...d.data() })); });
                     unsubscribePendencies = onSnapshot(collection(db, 'patients', p.id, 'pendencies'), (snap) => { currentPendencies.value = snap.docs.map(d => ({ id: d.id, ...d.data() })); });
+                    
+                    if (tab === 'summary') setTimeout(updateEditorContent, 100);
                 };
 
-                const closePatientDetails = () => { selectedPatientId.value = null; currentEvolutions.value = []; currentPendencies.value = []; editingPendencyId.value = null; };
+                const closePatientDetails = () => { selectedPatientId.value = null; currentEvolutions.value = []; currentPendencies.value = []; editingPendencyId.value = null; editingEvoId.value = null; };
 
                 const updatePatientDoc = async (patientData) => {
                     if (!patientData || !patientData.id) return;
@@ -743,6 +825,7 @@ PENDÊNCIAS E PROPOSTAS: (exames pendentes, incluindo externos; ajustes medicame
                         confirmMessage.value = `Reativar internação de ${payload.name}?`;
                         if (patients.value.find(p => p.status === 'active' && p.recordNumber === payload.recordNumber)) { showNotification('Já existe internação ativa.', 'error'); return; }
                     }
+                    else if (action === 'deleteEvo') confirmMessage.value = 'Excluir esta evolução?';
                     showConfirmDialog.value = true;
                 };
 
@@ -752,6 +835,7 @@ PENDÊNCIAS E PROPOSTAS: (exames pendentes, incluindo externos; ajustes medicame
                     if (pendingAction.value === 'discharge') dischargePatient(pendingPayload.value);
                     else if (pendingAction.value === 'visit') registerVisit();
                     else if (pendingAction.value === 'undoDischarge') undoDischarge(pendingPayload.value);
+                    else if (pendingAction.value === 'deleteEvo') deleteEvolution(pendingPayload.value);
                     cancelConfirm();
                 };
 
@@ -827,6 +911,39 @@ PENDÊNCIAS E PROPOSTAS: (exames pendentes, incluindo externos; ajustes medicame
                     try { await batch.commit(); newEvolutionText.value = ''; isIntercurrence.value = false; showNotification('Salvo!', 'success'); } catch (e) { showNotification('Erro.', 'error'); }
                 };
 
+                // --- MANIPULAÇÃO DE EVOLUÇÕES EXISTENTES ---
+                const startEditEvolution = (evo) => {
+                    editingEvoId.value = evo.id;
+                    editingEvoText.value = evo.note;
+                };
+
+                const cancelEditEvolution = () => {
+                    editingEvoId.value = null;
+                    editingEvoText.value = '';
+                };
+
+                const saveEvolutionEdit = async (evo) => {
+                    if (!selectedPatientId.value || !evo.id) return;
+                    try {
+                        await updateDoc(doc(db, 'patients', selectedPatientId.value, 'evolutions', evo.id), { note: editingEvoText.value });
+                        editingEvoId.value = null;
+                        showNotification('Nota atualizada.', 'success');
+                    } catch(e) { showNotification('Erro ao editar.', 'error'); }
+                };
+
+                const confirmDeleteEvolution = (evo) => {
+                    confirmAction('deleteEvo', evo);
+                };
+
+                const deleteEvolution = async (evo) => {
+                    if (!selectedPatientId.value || !evo.id) return;
+                    try {
+                        await deleteDoc(doc(db, 'patients', selectedPatientId.value, 'evolutions', evo.id));
+                        showNotification('Nota excluída.', 'success');
+                    } catch(e) { showNotification('Erro ao excluir.', 'error'); }
+                };
+                // ---------------------------------------------
+
                 const addPendency = async () => {
                     if (!selectedPatientId.value) return;
                     const batch = writeBatch(db); const pid = selectedPatientId.value;
@@ -841,45 +958,33 @@ PENDÊNCIAS E PROPOSTAS: (exames pendentes, incluindo externos; ajustes medicame
                 const startPendencyEdit = (task) => {
                     editingPendencyId.value = task.id;
                     editingPendencyText.value = task.description;
+                    editingPendencyCategory.value = task.category || 'Clínica Médica';
                 };
 
                 const cancelPendencyEdit = () => {
                     editingPendencyId.value = null;
                     editingPendencyText.value = '';
+                    editingPendencyCategory.value = 'Clínica Médica';
                 };
 
                 const savePendencyEdit = async (task) => {
                     if (!selectedPatientId.value || !task.id) return;
                     const batch = writeBatch(db); const pid = selectedPatientId.value;
                     
-                    // Atualiza na subcoleção
-                    batch.update(doc(db, 'patients', pid, 'pendencies', task.id), { description: editingPendencyText.value });
+                    // Atualiza na subcoleção com descrição e categoria
+                    batch.update(doc(db, 'patients', pid, 'pendencies', task.id), { 
+                        description: editingPendencyText.value,
+                        category: editingPendencyCategory.value
+                    });
 
-                    // Tenta atualizar no preview se possível (procurando pelo texto antigo)
-                    // Como o preview não tem ID garantido, vamos atualizar apenas a subcoleção e tentar atualizar o preview recriando-o com as últimas
-                    // Porém, para simplificar e garantir consistência, vamos apenas rodar o update da subcoleção.
-                    // O preview é atualizado ao adicionar ou remover, mas na edição é complexo sem ID no preview.
-                    // ESTRATÉGIA: Pegar as pendencias não resolvidas da memoria (currentPendencies) e atualizar o preview com elas.
-                    
                     try { 
-                        // Atualiza localmente para refletir na UI imediata
+                        // Update local object for immediate UI feedback
                         task.description = editingPendencyText.value;
+                        task.category = editingPendencyCategory.value;
                         
-                        // Reconstrói o preview baseado nas pendencias atuais da UI (assumindo que estão atualizadas pelo snapshot)
-                        // Pequeno delay para garantir que o snapshot pegue a mudança ou usamos o valor local
-                        
-                        // Vamos fazer um update "cego" no array de preview se encontrarmos a descrição antiga
-                        let updatedPreview = [...(selectedPatient.value.pendingPreview || [])];
-                        // Como pode haver descrições duplicadas, isso é arriscado, mas é o melhor sem IDs no preview.
-                        // O ideal seria que o preview tivesse IDs. Vamos assumir que vamos atualizar apenas a subcoleção por enquanto
-                        // E forçar uma atualização do preview baseada nas top 5 pendencias ABERTAS da lista atual.
-                        
-                        // Hack seguro: Atualizar o documento principal com um novo preview gerado das pendencias atuais (excluindo as resolvidas)
-                        const activePendencies = currentPendencies.value.filter(p => !p.done && p.id !== task.id); // Todas menos a atual (ainda com texto velho no snapshot)
-                        // Adiciona a atual editada
-                        activePendencies.unshift({ ...task, description: editingPendencyText.value });
-                        
-                        // Ordena por data (mais recente primeiro) se tiver data, ou mantém ordem
+                        // Atualiza Preview
+                        const activePendencies = currentPendencies.value.filter(p => !p.done && p.id !== task.id); 
+                        activePendencies.unshift({ ...task, description: editingPendencyText.value, category: editingPendencyCategory.value });
                         activePendencies.sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0));
                         
                         const newPreview = activePendencies.slice(0, 50).map(p => ({ description: p.description, category: p.category }));
@@ -933,7 +1038,16 @@ PENDÊNCIAS E PROPOSTAS: (exames pendentes, incluindo externos; ajustes medicame
 
                 const dischargePatient = async (p) => { await updatePatientDoc({ id: p.id, status: 'discharged', dischargeDate: new Date().toISOString() }); showNotification("Alta registrada.", "success"); };
                 const undoDischarge = async (p) => { await updatePatientDoc({ id: p.id, status: 'active', dischargeDate: null }); showNotification("Alta desfeita.", "success"); };
-                const copySummary = async () => { try { await navigator.clipboard.writeText(selectedPatient.value.dischargeSummary); showNotification('Copiado!', 'success'); } catch (e) { showNotification('Erro.', 'error'); } };
+                
+                // Copy agora usa um elemento temporário para suportar HTML ou apenas texto
+                const copySummary = async () => { 
+                    try { 
+                        // Copia apenas o texto visível para manter compatibilidade simples
+                        const text = document.getElementById('rich-editor').innerText;
+                        await navigator.clipboard.writeText(text); 
+                        showNotification('Copiado!', 'success'); 
+                    } catch (e) { showNotification('Erro.', 'error'); } 
+                };
 
                 const getCategoryColor = (cat) => ({'Neurologia':'bg-purple-100 text-purple-800','Clínica Médica':'bg-blue-100 text-blue-800','Qualquer médico':'bg-green-100 text-green-800'}[cat] || 'bg-gray-100');
                 const getCategoryDotColor = (cat) => ({'Neurologia':'text-purple-600','Clínica Médica':'text-blue-600','Qualquer médico':'text-green-600'}[cat] || 'text-yellow-500');
@@ -1014,8 +1128,12 @@ PENDÊNCIAS E PROPOSTAS: (exames pendentes, incluindo externos; ajustes medicame
                     isAuthorized, isCheckingAuth,
                     
                     // Novos retornos
-                    editingPendencyId, editingPendencyText, startPendencyEdit, cancelPendencyEdit, savePendencyEdit,
-                    EVOLUTION_TEMPLATE, toggleEvolutionSummary
+                    editingPendencyId, editingPendencyText, editingPendencyCategory, startPendencyEdit, cancelPendencyEdit, savePendencyEdit,
+                    EVOLUTION_TEMPLATE, toggleEvolutionSummary,
+                    // Editor Rico
+                    formatDoc, updateSummaryContent, updateEditorContent,
+                    // Evolução Edit
+                    editingEvoId, editingEvoText, startEditEvolution, cancelEditEvolution, saveEvolutionEdit, confirmDeleteEvolution, deleteEvolution
                 };
             }
         }).mount('#app');
